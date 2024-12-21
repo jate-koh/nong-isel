@@ -8,7 +8,7 @@ class Info(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    @commands.command(aliases=["server"])
+    @commands.command(aliases=["server", "guild", "guildinfo"])
     async def info(self, ctx):
         embed = discord.Embed(
             title="Server Information",

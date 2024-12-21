@@ -12,7 +12,7 @@ from rich import print
 
 # Bot Settings
 from settings import configs
-from cogs import info
+from cogs import info, states
 
 print(f"[b yellow] Python version: {sys.version}")
 print(f"[b green] Initializing...")
@@ -24,21 +24,19 @@ print(f"[b green] Starting bot...")
 
 bot = commands.Bot(command_prefix=configs["prefix"], intents=intents)
 
-
-@bot.event
-async def on_ready():
-
-    print(f"[b green] Bot is ready! Logged in as {bot.user}")
-    print(
-        f"[b green] Watching over guilds: {', '.join([guild.name for guild in bot.guilds])}"
-    )
-
-
 print(f"[b green] Loading cogs...")
 
 basics = [info.setup(bot)]
+states = [states.setup(bot)]
+cogs_array = [basics, states]
 
-for cog in basics:
-    asyncio.run(cog)
+for cog_type in cogs_array:
+    for cog in cog_type:
+        try:
+            asyncio.run(cog)
+        except Exception as e:
+            print(f"[b red] Error loading cog: {cog} - {e}")
+
+print(f"[b green] Starting bot...")
 
 bot.run(configs["token"])
