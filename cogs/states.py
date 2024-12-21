@@ -43,6 +43,27 @@ class ReadyState(commands.Cog):
         )
 
 
+class OnJoinState(commands.Cog):
+    def __init__(self, bot):
+        self.bot = bot
+
+    @commands.Cog.listener()
+    async def on_member_join(self, member):
+        print(f"[b green] {member.name} joined the server")
+
+        # Assign a role to the new member
+        try:
+            role = discord.utils.get(member.guild.roles, name="anonymous")
+            if role is None:
+                role = await member.guild.create_role(name="anonymous")
+
+            print(f"[b green] Assigning role {role.name} to {member.name}")
+            await member.add_roles(role)
+        except Exception as error:
+            print(f"[b red] Error assigning role to {member.name} - {error}")
+
+
 async def setup(bot):
     await bot.add_cog(ErrorState(bot))
     await bot.add_cog(ReadyState(bot))
+    await bot.add_cog(OnJoinState(bot))
