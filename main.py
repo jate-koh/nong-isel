@@ -12,7 +12,7 @@ from rich import print
 
 # Bot Settings
 from settings import configs
-from cogs import info, states
+from cogs import info, states, roles
 
 print(f"[b yellow] Python version: {sys.version}")
 print(f"[b green] Initializing...")
@@ -26,7 +26,7 @@ bot = commands.Bot(command_prefix=configs["prefix"], intents=intents)
 
 print(f"[b green] Loading cogs...")
 
-basics = [info.setup(bot)]
+basics = [info.setup(bot), roles.setup(bot)]
 states = [states.setup(bot)]
 cogs_array = [basics, states]
 

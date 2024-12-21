@@ -7,6 +7,7 @@ from discord.ext.commands import (
     MissingRequiredArgument,
 )
 
+from settings import configs
 from rich import print
 
 
@@ -63,7 +64,103 @@ class OnJoinState(commands.Cog):
             print(f"[b red] Error assigning role to {member.name} - {error}")
 
 
+class OnAddReaction(commands.Cog):
+    def __init__(self, bot):
+        self.bot = bot
+
+    @commands.Cog.listener()
+    async def on_raw_reaction_add(self, payload):
+        guild = self.bot.get_guild(payload.guild_id)
+        member = guild.get_member(payload.user_id)
+
+        # Ignore bot reactions
+        if member.bot:
+            return
+
+        with open("message_id.txt", "r") as f:
+            string = f.read()
+        message_id = int(string.split("\n")[0])
+
+        # If not reaction on "Role Assignment" post
+        if payload.message_id != message_id:
+            return
+
+        print(
+            f'[b green] Reaction added on "Role Assignment" post detected by {payload.user_id}'
+        )
+
+        emoji = str(payload.emoji)
+        role_name = next(
+            (
+                name
+                for name, role_emoji in configs["emojis"].items()
+                if role_emoji == emoji
+            ),
+            None,
+        )
+
+        if role_name:
+            try:
+                role = discord.utils.get(guild.roles, name=role_name)
+                if role:
+                    print(f"Assigning role '{role_name}' to {member}")
+                    await member.add_roles(role)
+            except Exception as error:
+                print(f"[b red] Error assigning role to {member.name} - {error}")
+        else:
+            print(f"[b red] Error assigning role to {member.name} - Role not found")
+
+
+class OnRemoveReaction(commands.Cog):
+    def __init__(self, bot):
+        self.bot = bot
+
+    @commands.Cog.listener()
+    async def on_raw_reaction_remove(self, payload):
+        guild = self.bot.get_guild(payload.guild_id)
+        member = guild.get_member(payload.user_id)
+
+        # Ignore bot reactions
+        if member.bot:
+            return
+
+        with open("message_id.txt", "r") as f:
+            string = f.read()
+        message_id = int(string.split("\n")[0])
+
+        # If not reaction on "Role Assignment" post
+        if payload.message_id != message_id:
+            return
+
+        print(
+            f'[b green] Reaction removed from "Role Assignment" post detected by {payload.user_id}'
+        )
+
+        emoji = str(payload.emoji)
+        role_name = next(
+            (
+                name
+                for name, role_emoji in configs["emojis"].items()
+                if role_emoji == emoji
+            ),
+            None,
+        )
+
+        if role_name:
+            try:
+                role = discord.utils.get(guild.roles, name=role_name)
+                if role:
+                    print(f"Removing role '{role_name}' from {member}")
+                    await member.remove_roles(role)
+            except Exception as error:
+                print(f"[b red] Error removing role from {member.name} - {error}")
+        else:
+            print(f"[b red] Error removing role from {member.name} - Role not found")
+
+
 async def setup(bot):
     await bot.add_cog(ErrorState(bot))
     await bot.add_cog(ReadyState(bot))
     await bot.add_cog(OnJoinState(bot))
+    await bot.add_cog(OnAddReaction(bot))
+    await bot.add_cog(OnRemoveReaction(bot))
