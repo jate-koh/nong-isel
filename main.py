@@ -24,18 +24,19 @@ print(f"[b green] Starting bot...")
 
 bot = commands.Bot(command_prefix=configs["prefix"], intents=intents)
 
+
 @bot.event
 async def on_ready():
-    
-    print(f"[b green] Bot is ready! Logged in as {bot.user}")
-    print(f"[b green] Watching over guilds: {', '.join([guild.name for guild in bot.guilds])}")
 
-    
+    print(f"[b green] Bot is ready! Logged in as {bot.user}")
+    print(
+        f"[b green] Watching over guilds: {', '.join([guild.name for guild in bot.guilds])}"
+    )
+
+
 print(f"[b green] Loading cogs...")
 
-basics = [
-    info.setup(bot)
-]
+basics = [info.setup(bot)]
 
 for cog in basics:
     asyncio.run(cog)

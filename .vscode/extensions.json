@@ -1,0 +1,11 @@
+{
+  "recommendations": [
+    "ms-python.python",
+    "usernamehw.errorlens",
+    "aaron-bond.better-comments",
+    "EditorConfig.EditorConfig",
+    "mhutchie.git-graph",
+    "equinusocio.vsc-material-theme-icons",
+    "ms-python.black-formatter"
+  ]
+}

@@ -4,9 +4,10 @@ from rich import print
 
 try:
     from dotenv import load_dotenv
+
     load_dotenv()
-    token = os.getenv('BOT_TOKEN')
-    guild_id = os.getenv('GUILD_ID')
+    token = os.getenv("BOT_TOKEN")
+    guild_id = os.getenv("GUILD_ID")
 except:
     print(f"[b red] Error loading environment variables!")
     exit()
@@ -84,6 +85,5 @@ configs = {
         "61": "<:61:1319604423940636702>",
         "62": "<:62:1319604435755995227>",
         "63": "<:63:1319604449043415041>",
-    }
+    },
 }
-    
