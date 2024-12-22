@@ -20,8 +20,6 @@ intents = Intents.default()
 intents.members = True
 intents.message_content = True
 
-print(f"[b green] Starting bot...")
-
 bot = commands.Bot(command_prefix=configs["prefix"], intents=intents)
 
 print(f"[b green] Loading cogs...")
@@ -38,5 +36,4 @@ for cog_type in cogs_array:
             print(f"[b red] Error loading cog: {cog} - {e}")
 
 print(f"[b green] Starting bot...")
-
 bot.run(configs["token"])

@@ -50,7 +50,7 @@ class OnJoinState(commands.Cog):
 
     @commands.Cog.listener()
     async def on_member_join(self, member):
-        print(f"[b green] {member.name} joined the server")
+        print(f"[b yellow] {member.name} joined the server")
 
         # Assign a role to the new member
         try:
@@ -58,7 +58,7 @@ class OnJoinState(commands.Cog):
             if role is None:
                 role = await member.guild.create_role(name="anonymous")
 
-            print(f"[b green] Assigning role {role.name} to {member.name}")
+            print(f"[b yellow] Assigning role {role.name} to {member.name}")
             await member.add_roles(role)
         except Exception as error:
             print(f"[b red] Error assigning role to {member.name} - {error}")
@@ -86,7 +86,7 @@ class OnAddReaction(commands.Cog):
             return
 
         print(
-            f'[b green] Reaction added on "Role Assignment" post detected by {payload.user_id}'
+            f'[b yellow] Reaction added on "Role Assignment" post detected by {payload.user_id}'
         )
 
         emoji = str(payload.emoji)
@@ -133,7 +133,7 @@ class OnRemoveReaction(commands.Cog):
             return
 
         print(
-            f'[b green] Reaction removed from "Role Assignment" post detected by {payload.user_id}'
+            f'[b yellow] Reaction removed from "Role Assignment" post detected by {payload.user_id}'
         )
 
         emoji = str(payload.emoji)
