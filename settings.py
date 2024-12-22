@@ -19,6 +19,10 @@ if token == None or guild_id == None:
 configs = {
     "token": token,
     "guild_id": guild_id,
+    "role_prefix": "G",
+    "group_prefix": "Group-",
+    "min_roles": 3,
+    "max_roles": 63,
     "prefix": "!",
     "emojis": {
         "0": "<:00:1319603401834627082>",
