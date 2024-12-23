@@ -22,53 +22,46 @@ class RoleGroup(commands.Cog):
         print(f"[b yellow] Running pre-setup...")
 
         guild = ctx.guild
+        try:
+            message_id, channel_id, current_num_roles = read_message_txt()
 
-        # If the file message_id.txt exists on directory
-        if os.path.exists("message_id.txt"):
-            try:
-                message_id, channel_id, current_num_roles = read_message_txt()
+            if message_id is not None:
+                print(f"[b yellow] Existing message found in local text.")
 
-                if message_id:
-                    print(f"[b yellow] Existing message found in local text.")
+                channel = self.bot.get_channel(int(channel_id))
+                if channel:
+                    message = await channel.fetch_message(int(message_id))
+                    await message.delete()
+                    print(f"[b green] Existing message deleted.")
+            else:
+                print(f"[b yellow] No existing message found.")
 
-                    channel = self.bot.get_channel(int(channel_id))
-                    if channel:
-                        message = await channel.fetch_message(int(message_id))
-                        await message.delete()
-                        print(f"[b green] Existing message deleted.")
-                else:
-                    print(f"[b yellow] No existing message found.")
+            if current_num_roles is not None:
+                print(f"[b yellow] Existing number of roles found in local text.")
 
-                if current_num_roles:
-                    print(f"[b yellow] Existing number of roles found in local text.")
+                if num_roles > configs["max_roles"]:
+                    await ctx.send("Maximum number of roles is 63.")
+                    return
 
-                    if num_roles > configs["max_roles"]:
-                        await ctx.send("Maximum number of roles is 63.")
-                        return
+                if num_roles < configs["min_roles"]:
+                    await ctx.send("Minimum number of roles is 3.")
+                    return
 
-                    if num_roles < configs["min_roles"]:
-                        await ctx.send("Minimum number of roles is 3.")
-                        return
+                print(f"[b yellow] Removing existing roles...")
 
-                    print(f"[b yellow] Removing existing roles...")
-
-                    for i in range(1, int(current_num_roles) + 1):
-                        role = discord.utils.get(
-                            guild.roles, name=f"{configs["role_prefix"]}{i}"
-                        )
-                        if role is not None:
-                            await role.delete()
-                        else:
-                            print(f"[b yellow] Role {i} not found.")
-
-                else:
-                    print(f"[b yellow] No existing number of roles found.")
-
-            except Exception as error:
-                print(
-                    f"[b red] Error in preparation for setting up group roles- {error}"
+                self.clear_roles(
+                    ctx,
+                    start=1,
+                    end=current_num_roles,
+                    prefix=configs["role_prefix"],
                 )
-                return
+
+            else:
+                print(f"[b yellow] No existing number of roles found.")
+
+        except Exception as error:
+            print(f"[b red] Error in preparation for setting up group roles- {error}")
+            return
 
         print(f"[b yellow] Setting up group roles and post for acquiring roles...")
 
@@ -158,10 +151,7 @@ class RoleGroupChat(commands.Cog):
             "createroleschat",
         ],
     )
-    async def create_chat(self, ctx):
-        """TODO: Fix issues where first 10 categories cannot
-        be fetched which cause the text and voice channel to not be created correctly"""
-
+    async def create_group_chat(self, ctx):
         guild = ctx.guild
 
         try:
@@ -194,6 +184,8 @@ class RoleGroupChat(commands.Cog):
 
         print(f"[b yellow] Setting up group chat...")
 
+        unsuccessful = []
+        # List of categories for second retry
         for i in range(1, int(current_num_roles) + 1):
             try:
                 # Create category
@@ -203,45 +195,51 @@ class RoleGroupChat(commands.Cog):
 
                 print(f"[b yellow] Creating category: {category_name}")
                 await guild.create_category(name=category_name)
-                new_category = discord.utils.get(
-                    guild.categories, name=f"{configs['group_prefix']}{i}"
-                )
+                new_category = discord.utils.get(guild.categories, name=category_name)
 
-                # Create text and voice channel
-                text_name = f"{configs['group_prefix']}{i}"
-                if len(str(i)) == 1:  # If it is one digit, add a 0 in front
-                    text_name = f"{configs['group_prefix']}0{i}"
-                voice_name = f"{configs['group_prefix']}{i}"
-                if len(str(i)) == 1:  # If it is one digit, add a 0 in front
-                    voice_name = f"{configs['group_prefix']}0{i}"
+                # Check if can be fetched
+                if new_category:
+                    # Create text and voice channel
+                    text_name = f"{configs['group_prefix']}{i}"
+                    if len(str(i)) == 1:  # If it is one digit, add a 0 in front
+                        text_name = f"{configs['group_prefix']}0{i}"
+                    voice_name = f"{configs['group_prefix']}{i}"
+                    if len(str(i)) == 1:  # If it is one digit, add a 0 in front
+                        voice_name = f"{configs['group_prefix']}0{i}"
+                    print(
+                        f"[b yellow] Creating text channel {text_name} and voice channel {voice_name} in category"
+                    )
+                    await guild.create_text_channel(text_name, category=new_category)
+                    await guild.create_voice_channel(voice_name, category=new_category)
 
-                print(
-                    f"[b yellow] Creating text channel {text_name} and voice channel {voice_name} in category"
-                )
-                await guild.create_text_channel(text_name, category=new_category)
-                await guild.create_voice_channel(voice_name, category=new_category)
+                    # Set permissions for new category
+                    student_role = discord.utils.get(
+                        guild.roles, name=f"{configs['role_prefix']}{i}"
+                    )
+                    ta_role = discord.utils.get(guild.roles, name="TA")
 
-                # Set permissions for new category
-                student_role = discord.utils.get(
-                    guild.roles, name=f"{configs['role_prefix']}{i}"
-                )
-                ta_role = discord.utils.get(guild.roles, name="TA")
-
-                print(
-                    f"[b yellow] Setting permissions for category {new_category.name}"
-                )
-                await new_category.set_permissions(
-                    guild.default_role, read_messages=False, connect=False
-                )
-                await new_category.set_permissions(
-                    student_role, read_messages=True, connect=True
-                )
-                await new_category.set_permissions(
-                    ta_role, read_messages=True, connect=True
-                )
+                    print(
+                        f"[b yellow] Setting permissions for category {new_category.name}"
+                    )
+                    await new_category.set_permissions(
+                        guild.default_role, read_messages=False, connect=False
+                    )
+                    await new_category.set_permissions(
+                        student_role, read_messages=True, connect=True
+                    )
+                    await new_category.set_permissions(
+                        ta_role, read_messages=True, connect=True
+                    )
+                else:
+                    print(f"[b red] Category {category_name} not found.")
+                    unsuccessful.append(category_name)
 
             except Exception as error:
                 print(f"[b red] Error creating group channels - {error}")
+
+        await ctx.send("Group chat setup complete!")
+        print(f"[b green] Group chat setup complete!")
+        print(f"[b yellow] Unsuccessful categories: {unsuccessful}")
 
     @commands.command(name="clearchannel")
     async def clear_channel(
