@@ -1,5 +1,6 @@
 import os
 import re
+import math
 import discord
 from discord.ext import commands
 
@@ -18,24 +19,33 @@ class RoleGroup(commands.Cog):
     @commands.command(
         name="createroles", aliases=["setuproles", "setuprole", "createrole"]
     )
-    async def create_roles(self, ctx, num_roles: int = configs["min_roles"]):
+    async def create_roles(
+        self, ctx, num_roles: int = configs["min_roles"], clear_all: bool = False
+    ):
         print(f"[b yellow] Running pre-setup...")
 
         guild = ctx.guild
         try:
             message_id, channel_id, current_num_roles = read_message_txt()
 
+            # Check for exisitng messages
             if message_id is not None:
-                print(f"[b yellow] Existing message found in local text.")
+                print(f"[b yellow] Existing messages found in local text.")
 
-                channel = self.bot.get_channel(int(channel_id))
+                channel = self.bot.get_channel(channel_id)
                 if channel:
-                    message = await channel.fetch_message(int(message_id))
-                    await message.delete()
-                    print(f"[b green] Existing message deleted.")
+                    for id in message_id:
+                        print(f"[b yellow] Deleting message {id}")
+                        try:
+                            message = await channel.fetch_message(id)
+                            await message.delete()
+                        except discord.NotFound:
+                            print(f"[b yellow] Message {id} not found.")
+                            pass
             else:
-                print(f"[b yellow] No existing message found.")
+                print(f"[b yellow] No existing messages found.")
 
+            # Check for existing number of roles
             if current_num_roles is not None:
                 print(f"[b yellow] Existing number of roles found in local text.")
 
@@ -47,15 +57,22 @@ class RoleGroup(commands.Cog):
                     await ctx.send("Minimum number of roles is 3.")
                     return
 
-                print(f"[b yellow] Removing existing roles...")
+                if num_roles < current_num_roles:
+                    await self.clear_roles(
+                        ctx,
+                        start=num_roles + 1,
+                        end=current_num_roles,
+                        prefix=configs["role_prefix"],
+                    )
 
-                self.clear_roles(
-                    ctx,
-                    start=1,
-                    end=current_num_roles,
-                    prefix=configs["role_prefix"],
-                )
-
+                if clear_all:
+                    print(f"[b yellow] Removing all existing roles...")
+                    await self.clear_roles(
+                        ctx,
+                        start=1,
+                        end=current_num_roles,
+                        prefix=configs["role_prefix"],
+                    )
             else:
                 print(f"[b yellow] No existing number of roles found.")
 
@@ -81,33 +98,68 @@ class RoleGroup(commands.Cog):
             else:
                 print(f"[b yellow] Role {role_name} already exists.")
 
-        # Send a message for users to react to
-        description = "\n".join(
-            [f"{emoji} - Group {name}" for name, emoji in roles_to_emojis.items()]
-        )
         embed = discord.Embed(
-            title="Role Assignment", description=description, color=discord.Color.blue()
+            title="Acquire your Discord role here!",
+            color=discord.Color.blue(),
         )
         message = await ctx.send(embed=embed)
 
-        try:
-            print("[b yellow] Adding reactions...")
-            # Add reactions to the message
-            for emoji in roles_to_emojis.values():
-                await message.add_reaction(emoji)
-        except Exception as error:
-            print(f"[b red] Error adding reactions - {error}")
+        # Add reactions to the message
+        # Each post has reaction limit of 20
+        num_of_post = int(math.floor(num_roles / 20) + 1)
+
+        react_posts = []
+        for i in range(1, num_of_post):
+            try:
+                print(f"[b yellow] Sending react post {i + 1}...")
+                embed = discord.Embed(
+                    title=f"Group numbers: {20 * (i - 1) + 1} to {min(num_roles, 20 * i)}",
+                    color=discord.Color.blue(),
+                )
+                post = await message.channel.send(embed=embed)
+                react_posts.append(post)
+            except Exception as error:
+                print(f"[b red] Error sending react post {i + 1} - {error}")
+
+        # Add reaction to each post (each post has reaction limit of 20)
+        print(f"[b yellow] Adding reactions to react post...")
+
+        chunks = []
+        for post_num in range(1, num_of_post):
+            chunk = {
+                str(i): roles_to_emojis.get(f"{configs["role_prefix"]}{i}")
+                for i in range(
+                    20 * (post_num - 1) + 1, min(num_roles, 20 * post_num) + 1
+                )
+            }
+            chunks.append(chunk)
+        print(chunks)
+
+        for post in react_posts:
+            chunk_no = react_posts.index(post) + 1
+            try:
+                emoji_dict = chunks[chunk_no - 1]
+                for emoji, role in emoji_dict.items():
+                    print(
+                        f"[b yellow] Adding reaction {emoji}, {role} to post {post.id}"
+                    )
+                    await post.add_reaction(role)
+            except Exception as error:
+                print(f"[b red] Error adding reactions - {error}")
 
         # Save the message ID for tracking reactions
         with open("message_id.txt", "w+") as f:
-            f.write(str(message.id))  # Message ID in the first line
+            f.write(str(message.id) + ",")  # Message ID of the initial post
+            f.write(
+                ",".join(str(post.id) for post in react_posts)
+            )  #  Follow by react post IDs separated by commas
             f.write("\n")  # New line
             f.write(str(message.channel.id))  # Channel ID in the second line
             f.write("\n")  # New line
             f.write(str(num_roles))  # Number of roles in the third line
             f.close()  # Close the file
 
-        print("[b green] Role Assignment post completed!")
+        print("[b green] Role acquisition posts completed!")
 
     @commands.command(name="clearroles")
     async def clear_roles(
@@ -151,7 +203,7 @@ class RoleGroupChat(commands.Cog):
             "createroleschat",
         ],
     )
-    async def create_group_chat(self, ctx):
+    async def create_group_chat(self, ctx, clear_all: bool = False):
         guild = ctx.guild
 
         try:
@@ -169,14 +221,15 @@ class RoleGroupChat(commands.Cog):
                 await ctx.send("Maximum number of roles is 63.")
                 return
 
-            print(f"[b yellow] Removing existing group channels...")
-            await self.clear_channel(
-                ctx,
-                start=1,
-                end=current_num_roles,
-                clear_txt=False,
-                prefix=configs["group_prefix"],
-            )
+            if clear_all:
+                print(f"[b yellow] Removing existing group channels...")
+                await self.clear_channel(
+                    ctx,
+                    start=1,
+                    end=current_num_roles,
+                    clear_txt=False,
+                    prefix=configs["group_prefix"],
+                )
 
         except Exception as error:
             print(f"[b red] Error in pre-setup of group chat setup - {error}")
@@ -184,8 +237,8 @@ class RoleGroupChat(commands.Cog):
 
         print(f"[b yellow] Setting up group chat...")
 
-        unsuccessful = []
         # List of categories for second retry
+        unsuccessful = []  # List of unsuccessful categories creation
         for i in range(1, int(current_num_roles) + 1):
             try:
                 # Create category
@@ -193,9 +246,13 @@ class RoleGroupChat(commands.Cog):
                 if len(str(i)) == 1:  # If it is one digit, add a 0 in front
                     category_name = f"{configs['group_prefix']}0{i}"
 
-                print(f"[b yellow] Creating category: {category_name}")
-                await guild.create_category(name=category_name)
                 new_category = discord.utils.get(guild.categories, name=category_name)
+
+                if not new_category:
+                    print(f"[b yellow] Creating category: {category_name}")
+                    await guild.create_category(name=category_name)
+                else:
+                    print(f"[b yellow] Category {category_name} already exists.")
 
                 # Check if can be fetched
                 if new_category:

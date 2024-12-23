@@ -14,7 +14,10 @@ def read_message_txt(dict: bool = False):
                     "current_role_num": None,
                 }
             return {
-                "message_id": int(string.split("\n")[0]),
+                "message_id": [
+                    string.split("\n")[0].split(",")[i]
+                    for i in range(len(string.split("\n")[0].split(",")))
+                ],
                 "channel_id": int(string.split("\n")[1]),
                 "current_role_num": int(string.split("\n")[2]),
             }
@@ -22,7 +25,10 @@ def read_message_txt(dict: bool = False):
             if not string:
                 return (None, None, None)
             return (
-                int(string.split("\n")[0]),
+                [
+                    int(string.split("\n")[0].split(",")[i])
+                    for i in range(len(string.split("\n")[0].split(",")))
+                ],
                 int(string.split("\n")[1]),
                 int(string.split("\n")[2]),
             )
