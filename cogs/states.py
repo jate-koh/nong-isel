@@ -7,6 +7,7 @@ from discord.ext.commands import (
     MissingRequiredArgument,
 )
 
+from utils import read_message_txt
 from settings import configs
 from rich import print
 
@@ -52,11 +53,11 @@ class OnJoinState(commands.Cog):
     async def on_member_join(self, member):
         print(f"[b yellow] {member.name} joined the server")
 
-        # Assign a role to the new member
         try:
-            role = discord.utils.get(member.guild.roles, name="anonymous")
+            # Assign a role to the new member
+            role = discord.utils.get(member.guild.roles, name=configs["guest_role"])
             if role is None:
-                role = await member.guild.create_role(name="anonymous")
+                role = await member.guild.create_role(name=configs["guest_role"])
 
             print(f"[b yellow] Assigning role {role.name} to {member.name}")
             await member.add_roles(role)
@@ -77,22 +78,20 @@ class OnAddReaction(commands.Cog):
         if member.bot:
             return
 
-        with open("message_id.txt", "r") as f:
-            string = f.read()
-        message_id = int(string.split("\n")[0])
+        # Check if reaction is one of react message (in message_id.txt)
+        list_of_post = read_message_txt(dict=True).get("message_id")
 
-        # If not reaction on "Role Assignment" post
-        if payload.message_id != message_id:
+        # If not in list, return
+        if payload.message_id not in list_of_post:
             return
 
-        print(
-            f'[b yellow] Reaction added on "Role Assignment" post detected by {payload.user_id}'
-        )
+        print(f"[b yellow] Role reaction added by {member.name}")
 
         emoji = str(payload.emoji)
+
         role_name = next(
             (
-                name
+                f"{configs['role_prefix']}{name}"
                 for name, role_emoji in configs["emojis"].items()
                 if role_emoji == emoji
             ),
@@ -100,11 +99,27 @@ class OnAddReaction(commands.Cog):
         )
 
         if role_name:
+            # Assign a role to member
             try:
                 role = discord.utils.get(guild.roles, name=role_name)
                 if role:
                     print(f"Assigning role '{role_name}' to {member}")
                     await member.add_roles(role)
+                else:
+                    print(f"Role '{role_name}' not found")
+
+                # Remove guest role
+                guest_role = discord.utils.get(
+                    member.guild.roles, name=configs["guest_role"]
+                )
+                if guest_role is not None:
+                    print(
+                        f"[b yellow] Removing guest role {guest_role.name} from {member.name}"
+                    )
+                    await member.remove_roles(guest_role)
+                else:
+                    print(f"[b yellow] Guest role not found")
+
             except Exception as error:
                 print(f"[b red] Error assigning role to {member.name} - {error}")
         else:
@@ -124,22 +139,19 @@ class OnRemoveReaction(commands.Cog):
         if member.bot:
             return
 
-        with open("message_id.txt", "r") as f:
-            string = f.read()
-        message_id = int(string.split("\n")[0])
+        # Check if reaction is one of react message (in message_id.txt)
+        list_of_post = read_message_txt(dict=True).get("message_id")
 
-        # If not reaction on "Role Assignment" post
-        if payload.message_id != message_id:
+        # If not in list, return
+        if payload.message_id not in list_of_post:
             return
 
-        print(
-            f'[b yellow] Reaction removed from "Role Assignment" post detected by {payload.user_id}'
-        )
+        print(f"[b yellow] Role reaction removed by {member.name}")
 
         emoji = str(payload.emoji)
         role_name = next(
             (
-                name
+                f"{configs['role_prefix']}{name}"
                 for name, role_emoji in configs["emojis"].items()
                 if role_emoji == emoji
             ),
@@ -148,10 +160,14 @@ class OnRemoveReaction(commands.Cog):
 
         if role_name:
             try:
+                # Remove role from member
                 role = discord.utils.get(guild.roles, name=role_name)
                 if role:
                     print(f"Removing role '{role_name}' from {member}")
                     await member.remove_roles(role)
+                else:
+                    print(f"Role '{role_name}' not found")
+
             except Exception as error:
                 print(f"[b red] Error removing role from {member.name} - {error}")
         else:

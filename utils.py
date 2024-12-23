@@ -15,7 +15,7 @@ def read_message_txt(dict: bool = False):
                 }
             return {
                 "message_id": [
-                    string.split("\n")[0].split(",")[i]
+                    int(string.split("\n")[0].split(",")[i])
                     for i in range(len(string.split("\n")[0].split(",")))
                 ],
                 "channel_id": int(string.split("\n")[1]),

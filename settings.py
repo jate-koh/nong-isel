@@ -19,6 +19,7 @@ if token == None or guild_id == None:
 configs = {
     "token": token,
     "guild_id": guild_id,
+    "guest_role": "anonymous",
     "role_prefix": "G",
     "group_prefix": "Group-",
     "min_roles": 3,
