@@ -16,6 +16,8 @@ if token == None or guild_id == None:
     print(f"[b red] Environment variables are missing!")
     exit()
 
+package = {"version": "1.0", "author": "CU-ISEL", "name": "nong-isel"}
+
 configs = {
     "token": token,
     "guild_id": guild_id,
