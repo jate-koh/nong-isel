@@ -11,7 +11,6 @@ from rich import print
 
 
 class RoleGroup(commands.Cog):
-    """TODO: Find workaround for maximum reactions in a message!"""
 
     def __init__(self, bot):
         self.bot = bot
@@ -19,6 +18,7 @@ class RoleGroup(commands.Cog):
     @commands.command(
         name="createroles", aliases=["setuproles", "setuprole", "createrole"]
     )
+    @commands.has_any_role(configs["admin_role"])
     async def create_roles(
         self, ctx, num_roles: int = configs["min_roles"], clear_all: bool = False
     ):
@@ -162,6 +162,7 @@ class RoleGroup(commands.Cog):
         print("[b green] Role acquisition posts completed!")
 
     @commands.command(name="clearroles")
+    @commands.has_any_role(configs["admin_role"])
     async def clear_roles(
         self,
         ctx,
@@ -203,6 +204,7 @@ class RoleGroupChat(commands.Cog):
             "createroleschat",
         ],
     )
+    @commands.has_any_role(configs["admin_role"])
     async def create_group_chat(self, ctx, clear_all: bool = False):
         guild = ctx.guild
 
@@ -299,6 +301,7 @@ class RoleGroupChat(commands.Cog):
         print(f"[b yellow] Unsuccessful categories: {unsuccessful}")
 
     @commands.command(name="clearchannel")
+    @commands.has_any_role(configs["admin_role"])
     async def clear_channel(
         self,
         ctx,

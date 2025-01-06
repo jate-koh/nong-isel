@@ -21,6 +21,7 @@ package = {"version": "1.0", "author": "CU-ISEL", "name": "nong-isel"}
 configs = {
     "token": token,
     "guild_id": guild_id,
+    "admin_role": "TA Grad",
     "guest_role": "anonymous",
     "role_prefix": "G",
     "group_prefix": "Group-",

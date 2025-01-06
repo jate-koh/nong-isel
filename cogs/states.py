@@ -5,6 +5,7 @@ from discord.ext.commands import (
     MissingPermissions,
     MemberNotFound,
     MissingRequiredArgument,
+    MissingAnyRole,
 )
 
 from utils import read_message_txt
@@ -27,10 +28,12 @@ class ErrorState(commands.Cog):
             embed.description = "Member not found"
         elif isinstance(error, MissingRequiredArgument):
             embed.description = "Missing required argument"
+        elif isinstance(error, MissingAnyRole):
+            embed.description = "You don't have permission to use this command"
         else:
             raise error
             embed.description = f"An error occurred: {error}"
-        await ctx.send(embed=embed)
+        await ctx.reply(embed=embed)
 
 
 class ReadyState(commands.Cog):
