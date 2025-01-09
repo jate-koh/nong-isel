@@ -28,6 +28,7 @@ configs = {
     "min_roles": 3,
     "max_roles": 63,
     "prefix": "!",
+    "qna_channel": "1326000721350492215",
     "emojis": {
         "0": "<:00:1319603401834627082>",
         "1": "<:01:1319603438358630400>",
@@ -94,4 +95,11 @@ configs = {
         "62": "<:62:1319604435755995227>",
         "63": "<:63:1319604449043415041>",
     },
+}
+
+test_flags = {
+    "enable_testing": True,
+    "disable_dm": True,
+    "disable_role_assign": True,
+    "disable_role_react": True,
 }

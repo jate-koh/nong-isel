@@ -8,6 +8,7 @@ from discord.ext.commands import (
     MissingAnyRole,
 )
 
+from settings import test_flags
 from utils import read_message_txt
 from settings import configs
 from rich import print
@@ -47,6 +48,62 @@ class ReadyState(commands.Cog):
             f"[b yellow] Watching over guilds: {', '.join([guild.name for guild in self.bot.guilds])}"
         )
 
+        ############################## TESTING MODE ##############################
+        if test_flags["enable_testing"] or test_flags is not None:
+            print(f"[b yellow] Testing mode is enabled.")
+        ##########################################################################
+
+
+class MessagesState(commands.Cog):
+    def __init__(self, bot):
+        self.bot = bot
+
+    @commands.Cog.listener()
+    async def on_message(self, message):
+
+        # Ignore bot own messages
+        if message.author == self.bot.user:
+            return
+
+        # Check if message is a direct message
+        if message.channel.type == discord.ChannelType.private:
+            print(
+                f"[b yellow] Direct message from {message.author.name}: {message.content}"
+            )
+
+            ############################## TESTING MODE ##############################
+            if test_flags["disable_dm"]:
+                print(f"[b yellow] Direct message is disabled by test flags.")
+
+                embed = discord.Embed(
+                    title="This bot is test bot!",
+                    description="Use other bot! This bot has DMs disabled for testing.",
+                    color=discord.Color.red(),
+                )
+
+                await message.reply(embed=embed)
+
+                return
+            ##########################################################################
+
+            # Get Q&A channel
+            channel = self.bot.get_channel(int(configs["qna_channel"]))
+            if channel is None:
+                print(f"[b red] Q&A channel not found")
+                return
+
+            # Send message to Q&A channel
+            embed = discord.Embed(
+                title="Direct Message",
+                description=f"{message.content}",
+                color=discord.Color.blue(),
+            )
+            embed.set_footer(
+                text=f"Sent by {message.author.name}",
+                icon_url=message.author.avatar.url,
+            )
+            await channel.send(embed=embed)
+
 
 class OnJoinState(commands.Cog):
     def __init__(self, bot):
@@ -55,6 +112,12 @@ class OnJoinState(commands.Cog):
     @commands.Cog.listener()
     async def on_member_join(self, member):
         print(f"[b yellow] {member.name} joined the server")
+
+        ############################## TESTING MODE ##############################
+        if test_flags["disable_role_assign"]:
+            print(f"[b yellow] Role assignment is disabled by test flags.")
+            return
+        ##########################################################################
 
         try:
             # Assign a role to the new member
@@ -80,6 +143,12 @@ class OnAddReaction(commands.Cog):
         # Ignore bot reactions
         if member.bot:
             return
+
+        ############################## TESTING MODE ##############################
+        if test_flags["disable_role_react"]:
+            print(f"[b yellow] Role reaction is disabled by test flags.")
+            return
+        ##########################################################################
 
         # Check if reaction is one of react message (in message_id.txt)
         list_of_post = read_message_txt(dict=True).get("message_id")
@@ -142,6 +211,12 @@ class OnRemoveReaction(commands.Cog):
         if member.bot:
             return
 
+        ############################## TESTING MODE ##############################
+        if test_flags["disable_role_react"]:
+            print(f"[b yellow] Role reaction is disabled by test flags.")
+            return
+        ##########################################################################
+
         # Check if reaction is one of react message (in message_id.txt)
         list_of_post = read_message_txt(dict=True).get("message_id")
 
@@ -180,6 +255,7 @@ class OnRemoveReaction(commands.Cog):
 async def setup(bot):
     await bot.add_cog(ErrorState(bot))
     await bot.add_cog(ReadyState(bot))
+    await bot.add_cog(MessagesState(bot))
     await bot.add_cog(OnJoinState(bot))
     await bot.add_cog(OnAddReaction(bot))
     await bot.add_cog(OnRemoveReaction(bot))
