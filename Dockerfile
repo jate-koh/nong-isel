@@ -1,6 +1,5 @@
 # Install System and Dependencies
-FROM python:3
-FROM gorialis/discord.py
+FROM python:3.13
 
 # Create working directories
 RUN mkdir -p /usr/src/bot
