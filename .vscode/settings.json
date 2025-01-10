@@ -5,4 +5,19 @@
 
   "editor.formatOnSave": true,
   "editor.defaultFormatter": "ms-python.black-formatter",
+
+  "pylint.args": [
+    "--disable=W0718",
+    "--disable=W1309",
+    "--disable=W0622",
+    "--clear-cache-post-run=n"
+  ],
+  "pylint.severity": {
+    "convention": "Hint",
+    "error": "Error",
+    "fatal": "Error",
+    "refactor": "Hint",
+    "warning": "Warning",
+    "info": "Hint"
+  }
 }

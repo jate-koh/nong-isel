@@ -6,6 +6,7 @@
     "EditorConfig.EditorConfig",
     "mhutchie.git-graph",
     "equinusocio.vsc-material-theme-icons",
-    "ms-python.black-formatter"
+    "ms-python.black-formatter",
+    "ms-python.pylint"
   ]
 }
