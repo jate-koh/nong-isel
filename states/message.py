@@ -84,6 +84,16 @@ class MessagesState(commands.Cog):
                 ): discord.PermissionOverwrite(view_channel=True),
             }
 
+            # Add staff roles to the overwrites roles map
+            for role in self.configs["staff_role"]:
+                staff_role = discord.utils.get(guild.roles, name=role)
+                if staff_role is not None:
+                    overwrites[staff_role] = discord.PermissionOverwrite(
+                        view_channel=True
+                    )
+                else:
+                    print(f"[b red] Role {role} not found.")
+
             # Create tickets texts in the Q&A categories
             try:
                 categories = discord.utils.get(

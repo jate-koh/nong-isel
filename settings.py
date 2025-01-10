@@ -23,6 +23,7 @@ configs = {
     "token": token,
     "guild_id": guild_id,
     "admin_role": "TA-Grad",
+    "staff_role": ["TA"],
     "guest_role": "anonymous",
     "role_prefix": "G",
     "group_prefix": "Group-",
