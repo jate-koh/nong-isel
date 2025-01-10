@@ -1,28 +1,42 @@
-import os
-import re
 import math
 import discord
 from discord.ext import commands
-
-from settings import configs
-from utils import read_message_txt
-
 from rich import print
 
+from utils import read_message_txt
+from constants import default_configs, default_flags
 
-class RoleGroup(commands.Cog):
+# TODO:
+# Provide configs for func args and @commands directive
+# without importing from static settings
+# but feed through instantiation.
+from settings import configs as conf
 
-    def __init__(self, bot):
+
+class RoleGroupCommands(commands.Cog):
+
+    def __init__(self, bot, configs=None, flags=None):
         self.bot = bot
+        if configs is not None:
+            self.configs = configs
+        else:
+            self.configs = default_configs()
+        if flags is not None:
+            self.flags = flags
+        else:
+            self.flags = default_flags()
 
     @commands.command(
         name="createroles", aliases=["setuproles", "setuprole", "createrole"]
     )
-    @commands.has_any_role(configs["admin_role"])
-    async def create_roles(
-        self, ctx, num_roles: int = configs["min_roles"], clear_all: bool = False
-    ):
+    @commands.has_any_role(conf["admin_role"])
+    async def create_roles(self, ctx, num_roles=conf["max_roles"], clear_all=False):
         print(f"[b yellow] Running pre-setup...")
+
+        if self.configs is not default_configs():
+            print(f"[b yellow] Custom configuration are used for creating roles")
+        else:
+            print(f"[b yellow] Using default configs for creating roles")
 
         guild = ctx.guild
         try:
@@ -41,7 +55,6 @@ class RoleGroup(commands.Cog):
                             await message.delete()
                         except discord.NotFound:
                             print(f"[b yellow] Message {id} not found.")
-                            pass
             else:
                 print(f"[b yellow] No existing messages found.")
 
@@ -49,12 +62,16 @@ class RoleGroup(commands.Cog):
             if current_num_roles is not None:
                 print(f"[b yellow] Existing number of roles found in local text.")
 
-                if num_roles > configs["max_roles"]:
-                    await ctx.send("Maximum number of roles is 63.")
+                if num_roles > self.configs["max_roles"]:
+                    await ctx.send(
+                        f"Maximum number of roles is {self.configs['max_roles']}"
+                    )
                     return
 
-                if num_roles < configs["min_roles"]:
-                    await ctx.send("Minimum number of roles is 3.")
+                if num_roles < self.configs["min_roles"]:
+                    await ctx.send(
+                        f"Minimum number of roles is {self.configs['min_roles']}"
+                    )
                     return
 
                 if num_roles < current_num_roles:
@@ -62,7 +79,7 @@ class RoleGroup(commands.Cog):
                         ctx,
                         start=num_roles + 1,
                         end=current_num_roles,
-                        prefix=configs["role_prefix"],
+                        prefix=self.configs["role_prefix"],
                     )
 
                 if clear_all:
@@ -71,7 +88,7 @@ class RoleGroup(commands.Cog):
                         ctx,
                         start=1,
                         end=current_num_roles,
-                        prefix=configs["role_prefix"],
+                        prefix=self.configs["role_prefix"],
                     )
             else:
                 print(f"[b yellow] No existing number of roles found.")
@@ -83,7 +100,7 @@ class RoleGroup(commands.Cog):
         print(f"[b yellow] Setting up group roles and post for acquiring roles...")
 
         roles_to_emojis = {
-            configs["role_prefix"] + str(i): configs["emojis"][str(i)]
+            self.configs["role_prefix"] + str(i): self.configs["emojis"][str(i)]
             for i in range(1, num_roles + 1)
         }
 
@@ -127,7 +144,7 @@ class RoleGroup(commands.Cog):
         chunks = []
         for post_num in range(1, num_of_post):
             chunk = {
-                str(i): roles_to_emojis.get(f"{configs["role_prefix"]}{i}")
+                str(i): roles_to_emojis.get(f"{self.configs["role_prefix"]}{i}")
                 for i in range(
                     20 * (post_num - 1) + 1, min(num_roles, 20 * post_num) + 1
                 )
@@ -162,13 +179,13 @@ class RoleGroup(commands.Cog):
         print("[b green] Role acquisition posts completed!")
 
     @commands.command(name="clearroles")
-    @commands.has_any_role(configs["admin_role"])
+    @commands.has_any_role(conf["admin_role"])
     async def clear_roles(
         self,
         ctx,
         start: int = 1,
-        end: int = configs["max_roles"],
-        prefix: str = configs["role_prefix"],
+        end: int = conf["max_roles"],
+        prefix: str = conf["role_prefix"],
     ):
         guild = ctx.guild
 
@@ -190,21 +207,30 @@ class RoleGroup(commands.Cog):
             print(f"[b red] Error clearing roles - {error}")
 
 
-class RoleGroupChat(commands.Cog):
+class RoleGroupChatCommands(commands.Cog):
 
-    def __init__(self, bot):
+    def __init__(self, bot, configs=None, flags=None):
         self.bot = bot
+        if configs is not None:
+            self.configs = configs
+        else:
+            self.configs = default_configs()
+        if flags is not None:
+            self.flags = flags
+        else:
+            self.flags = default_flags()
 
     @commands.command(
         name="createchat",
         aliases=[
-            "createrolechat" "creategroupchat",
+            "createrolechat",
+            "creategroupchat",
             "setuproleschat",
             "setuprolechat",
             "createroleschat",
         ],
     )
-    @commands.has_any_role(configs["admin_role"])
+    @commands.has_any_role(conf["admin_role"])
     async def create_group_chat(self, ctx, clear_all: bool = False):
         guild = ctx.guild
 
@@ -215,11 +241,11 @@ class RoleGroupChat(commands.Cog):
                 await ctx.send("No roles found. Create role first!")
                 return
 
-            if current_num_roles < configs["min_roles"]:
+            if current_num_roles < self.configs["min_roles"]:
                 await ctx.send("Minimum number of roles is 3.")
                 return
 
-            if current_num_roles > configs["max_roles"]:
+            if current_num_roles > self.configs["max_roles"]:
                 await ctx.send("Maximum number of roles is 63.")
                 return
 
@@ -230,7 +256,7 @@ class RoleGroupChat(commands.Cog):
                     start=1,
                     end=current_num_roles,
                     clear_txt=False,
-                    prefix=configs["group_prefix"],
+                    prefix=self.configs["group_prefix"],
                 )
 
         except Exception as error:
@@ -244,9 +270,9 @@ class RoleGroupChat(commands.Cog):
         for i in range(1, int(current_num_roles) + 1):
             try:
                 # Create category
-                category_name = f"{configs['group_prefix']}{i}"
+                category_name = f"{self.configs['group_prefix']}{i}"
                 if len(str(i)) == 1:  # If it is one digit, add a 0 in front
-                    category_name = f"{configs['group_prefix']}0{i}"
+                    category_name = f"{self.configs['group_prefix']}0{i}"
 
                 new_category = discord.utils.get(guild.categories, name=category_name)
 
@@ -259,12 +285,12 @@ class RoleGroupChat(commands.Cog):
                 # Check if can be fetched
                 if new_category:
                     # Create text and voice channel
-                    text_name = f"{configs['group_prefix']}{i}"
+                    text_name = f"{self.configs['group_prefix']}{i}"
                     if len(str(i)) == 1:  # If it is one digit, add a 0 in front
-                        text_name = f"{configs['group_prefix']}0{i}"
-                    voice_name = f"{configs['group_prefix']}{i}"
+                        text_name = f"{self.configs['group_prefix']}0{i}"
+                    voice_name = f"{self.configs['group_prefix']}{i}"
                     if len(str(i)) == 1:  # If it is one digit, add a 0 in front
-                        voice_name = f"{configs['group_prefix']}0{i}"
+                        voice_name = f"{self.configs['group_prefix']}0{i}"
                     print(
                         f"[b yellow] Creating text channel {text_name} and voice channel {voice_name} in category"
                     )
@@ -273,7 +299,7 @@ class RoleGroupChat(commands.Cog):
 
                     # Set permissions for new category
                     student_role = discord.utils.get(
-                        guild.roles, name=f"{configs['role_prefix']}{i}"
+                        guild.roles, name=f"{self.configs['role_prefix']}{i}"
                     )
                     ta_role = discord.utils.get(guild.roles, name="TA")
 
@@ -301,14 +327,14 @@ class RoleGroupChat(commands.Cog):
         print(f"[b yellow] Unsuccessful categories: {unsuccessful}")
 
     @commands.command(name="clearchannel")
-    @commands.has_any_role(configs["admin_role"])
+    @commands.has_any_role(conf["admin_role"])
     async def clear_channel(
         self,
         ctx,
         start: int = 1,
-        end: int = configs["max_roles"],
+        end: int = conf["max_roles"],
         clear_txt: bool = False,
-        prefix: str = configs["group_prefix"],
+        prefix: str = conf["group_prefix"],
     ):
         guild = ctx.guild
 
@@ -363,8 +389,3 @@ class RoleGroupChat(commands.Cog):
         if clear_txt is True:
             with open("message_id.txt", "w+") as f:
                 f.write("")
-
-
-async def setup(bot):
-    await bot.add_cog(RoleGroup(bot))
-    await bot.add_cog(RoleGroupChat(bot))

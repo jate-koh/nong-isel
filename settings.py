@@ -1,5 +1,5 @@
 import os
-import discord
+import sys
 from rich import print
 
 try:
@@ -8,9 +8,10 @@ try:
     load_dotenv()
     token = os.getenv("BOT_TOKEN")
     guild_id = os.getenv("GUILD_ID")
-except:
+
+except Exception as error:
     print(f"[b red] Error loading environment variables!")
-    exit()
+    sys.exit()
 
 if token == None or guild_id == None:
     print(f"[b red] Environment variables are missing!")

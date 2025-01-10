@@ -1,16 +1,22 @@
 import discord
 from discord.ext import commands
-from settings import configs
 from rich import print
 
+from constants import default_configs
+from settings import configs as conf
 
-class Info(commands.Cog):
 
-    def __init__(self, bot):
+class InfoCommand(commands.Cog):
+
+    def __init__(self, bot, configs=None):
         self.bot = bot
+        if configs is not None:
+            self.configs = configs
+        else:
+            self.configs = default_configs()
 
     @commands.command(aliases=["server", "guild", "guildinfo"])
-    @commands.has_any_role(configs["admin_role"])
+    @commands.has_any_role(conf["admin_role"])
     async def info(self, ctx):
 
         user = ctx.author
@@ -26,4 +32,4 @@ class Info(commands.Cog):
 
 
 async def setup(bot):
-    await bot.add_cog(Info(bot))
+    await bot.add_cog(InfoCommand(bot))
