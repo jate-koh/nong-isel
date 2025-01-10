@@ -22,7 +22,7 @@ package = {"version": "1.0", "author": "CU-ISEL", "name": "nong-isel"}
 configs = {
     "token": token,
     "guild_id": guild_id,
-    "admin_role": "TA Grad",
+    "admin_role": "TA-Grad",
     "guest_role": "anonymous",
     "role_prefix": "G",
     "group_prefix": "Group-",
@@ -30,6 +30,7 @@ configs = {
     "max_roles": 63,
     "prefix": "!",
     "qna_channel": "1326000721350492215",
+    "qna_category": "1327195958651387967",
     "emojis": {
         "0": "<:00:1319603401834627082>",
         "1": "<:01:1319603438358630400>",
@@ -100,7 +101,7 @@ configs = {
 
 test_flags = {
     "enable_testing": True,
-    "disable_dm": True,
+    "disable_dm": False,
     "disable_role_assign": True,
     "disable_role_react": True,
 }

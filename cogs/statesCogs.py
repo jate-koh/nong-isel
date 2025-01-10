@@ -19,6 +19,7 @@ async def setup(bot, configs=None, flags=None):
             for valid_key in configs.keys()
             if valid_key not in ["token", "guild_id", "emojis"]
         }
+        valid["emojis"] = f"{str(len(configs["emojis"]))} emojis"
         print(f"[b yellow] Configs are set for Commands Cogs: {valid}")
     else:
         print(f"[b yellow] Using default configs for States Cogs.")
