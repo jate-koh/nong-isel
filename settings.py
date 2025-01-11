@@ -15,7 +15,7 @@ except Exception as error:
 
 if token == None or guild_id == None:
     print(f"[b red] Environment variables are missing!")
-    exit()
+    sys.exit()
 
 package = {"version": "1.0", "author": "CU-ISEL", "name": "nong-isel"}
 

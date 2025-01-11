@@ -37,6 +37,34 @@ class MessagesState(commands.Cog):
                 return
             ##########################################################################
 
+            # Check if author id is in records
+            try:
+                with open("ticket_id.txt", "r") as f:
+                    for line in f:
+                        if not line:
+                            continue
+                        if int(line.split(":")[1]) == int(message.author.id):
+                            user_ticket = line.split(":")[0]
+                            embed = discord.Embed(
+                                title="You already have an open ticket",
+                                color=discord.Color.red(),
+                            )
+                            embed.add_field(
+                                name="Ticket ID",
+                                value=discord.utils.get(
+                                    guild.text_channels,
+                                    name=user_ticket,
+                                ).mention,
+                                inline=False,
+                            )
+                            await message.reply(embed=embed)
+                            return
+            except FileNotFoundError:
+                print(f"[b yellow] File ticket_id.txt not found.")
+            except Exception as error:
+                print(f"[b red] Error reading ticket_id.txt - {error}")
+                return
+
             # Create ticket ID
             ticket_id = sf.next_id()
             print(f"[b yellow] Generated ticket ID: {ticket_id}")
@@ -161,4 +189,17 @@ class MessagesState(commands.Cog):
                 await message.reply(embed=embed)
             except Exception as error:
                 print(f"[b red] Error sending DM to {message.author.name} - {error}")
+                return
+
+            # Append ticket ID to records
+            try:
+                with open("ticket_id.txt", "a") as f:
+                    f.write(f"{ticket_id}:{message.author.id}\n")
+                    f.close()
+
+                print(
+                    f"[b green] Ticket ID {ticket_id} from {message.author.id} ({message.author.name}) appended to ticket_id.txt"
+                )
+            except Exception as error:
+                print(f"[b red] Error appending ticket ID to ticket_id.txt - {error}")
                 return
