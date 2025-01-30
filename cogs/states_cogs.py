@@ -7,6 +7,10 @@ from constants import default_configs, default_flags
 async def setup(bot, configs=None, flags=None):
     print(f"[b green] Loading states...")
 
+    if bot is None:
+        print(f"[b red] Bot object is None.")
+        return
+
     if flags is not None:
         print(f"[b yellow] Flags are set: {flags}")
     else:

@@ -178,6 +178,9 @@ class RoleGroupCommands(commands.Cog):
 
         print("[b green] Role acquisition posts completed!")
 
+    # TODO:
+    # async def assign_roles_to_groups(self, ctx, roles):
+
     @commands.command(name="clearroles")
     @commands.has_any_role(conf["admin_role"])
     async def clear_roles(

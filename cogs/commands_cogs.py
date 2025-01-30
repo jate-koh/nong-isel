@@ -1,11 +1,15 @@
 from rich import print
 
 from constants import default_configs, default_flags
-from commands import InfoCommand, RoleGroupChatCommands, RoleGroupCommands
+from commands import InfoCommands, RoleGroupChatCommands, RoleGroupCommands
 
 
 async def setup(bot, configs=None, flags=None):
     print(f"[b green] Loading commands...")
+
+    if bot is None:
+        print(f"[b red] Bot object is None.")
+        return
 
     if flags is not None:
         print(f"[b yellow] Flags are set: {flags}")
@@ -25,6 +29,7 @@ async def setup(bot, configs=None, flags=None):
         print(f"[b yellow] Using default configs for Commands Cogs.")
         configs = default_configs()
 
+    # Add cogs and slashes
     try:
         # Roles Commands
         await bot.add_cog(
@@ -43,7 +48,12 @@ async def setup(bot, configs=None, flags=None):
         )
 
         # Informations Commands
-        await bot.add_cog(InfoCommand(bot))
+        await bot.add_cog(
+            InfoCommands(
+                bot=bot,
+                configs=configs,
+            )
+        )
 
     except Exception as error:
         print(f"[b red] Error loading commands - {error}")
