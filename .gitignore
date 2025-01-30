@@ -1,7 +1,8 @@
 # Repo-specific
 ticket_id.txt
 message_id.txt
-**/archive*
+**/*archive*
+**/*private*
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
