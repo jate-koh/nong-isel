@@ -101,8 +101,8 @@ configs = {
 }
 
 test_flags = {
-    "enable_testing": True,
-    "disable_dm": False,
+    "enable_testing": False,
+    "disable_dm": True,
     "disable_role_assign": True,
     "disable_role_react": True,
 }
