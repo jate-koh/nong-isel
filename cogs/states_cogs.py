@@ -33,7 +33,12 @@ async def setup(bot, configs=None, flags=None):
     try:
         # Cores
         await bot.add_cog(ErrorState(bot))
-        await bot.add_cog(GeneralState(bot))
+        await bot.add_cog(
+            GeneralState(
+                bot=bot,
+                logger=logger,
+            )
+        )
 
         # Q&A System
         await bot.add_cog(
@@ -48,6 +53,7 @@ async def setup(bot, configs=None, flags=None):
         await bot.add_cog(
             RoleState(
                 bot=bot,
+                logger=logger,
                 configs=configs,
                 flags=flags,
             )

@@ -24,6 +24,10 @@ class Logger:
             os.getcwd(),
             default_path()["logs_dir"],
         )
+        self.debug_path = os.path.join(
+            os.getcwd(),
+            default_path()["debugs_dir"],
+        )
         if module is None:
             self.module = ""
         else:
@@ -85,7 +89,7 @@ class Logger:
         if json_data is not None:
             self.write(json_data)
 
-    def error(self, message, json_data=None, module=None, record=True):
+    def error(self, message, json_data=None, record=True):
         buff = self.format_time() + colored(" ERROR", "red", attrs=["bold"])
         if self.module is not None:
             buff += self.format_module(self.module)
@@ -99,7 +103,21 @@ class Logger:
         if json_data is not None:
             self.write(json_data)
 
-    def write(self, message):
+    def debug(self, message, json_data=None, record=True):
+        buff = self.format_time() + colored(" DEBUG", "light_green", attrs=["bold"])
+        if self.module is not None:
+            buff += self.format_module(self.module)
+        buff += self.format_message(message)
+        if json_data is not None:
+            buff += "\n" + self.format_object(json_data)
+        print(buff)
+
+        if record:
+            self.write(message, debug_log=True)
+        if json_data is not None:
+            self.write(json_data, debug_log=True)
+
+    def write(self, message, debug_log=False):
         if not os.path.exists(os.path.dirname(self.path)):
             os.makedirs(os.path.dirname(self.path))
 
@@ -107,6 +125,16 @@ class Logger:
             with open(self.path, "w", encoding="utf-8") as f:
                 f.write("")
             f.close()
+        if not os.path.exists(self.debug_path):
+            with open(self.debug_path, "w", encoding="utf-8") as f:
+                f.write("")
+            f.close()
+
+        if debug_log:
+            with open(self.debug_path, "a", encoding="utf-8") as f:
+                f.write(f"[{datetime.datetime.now(tz=self.tz)}]; {message}\n")
+            f.close()
+            return
 
         with open(self.path, "a", encoding="utf-8") as f:
             f.write(f"[{datetime.datetime.now(tz=self.tz)}]; {message}\n")

@@ -1,14 +1,17 @@
 import discord
 from discord.ext import commands
-from rich import print
 
 from utils import read_message_txt
 from constants import default_configs, default_flags
 
 
 class RoleState(commands.Cog):
-    def __init__(self, bot, configs=None, flags=None):
+    def __init__(self, bot, logger, configs=None, flags=None):
+        if bot is None or logger is None:
+            raise ValueError("bot and logger are required")
+
         self.bot = bot
+        self.logger = logger
         if configs is not None:
             self.configs = configs
         else:
@@ -20,11 +23,11 @@ class RoleState(commands.Cog):
 
     @commands.Cog.listener("on_member_join")
     async def giveRoleOnJoin(self, member):
-        print(f"[b yellow] {member.name} joined the server")
+        self.logger.info(f"{member.name} joined the server")
 
         ############################## TESTING MODE ##############################
         if self.flags["disable_role_assign"] and self.flags["enable_testing"]:
-            print(f"[b yellow] Role assignment is disabled by test flags.")
+            self.logger.warn(f"Role assignment is disabled by test flags.")
             return
         ##########################################################################
 
@@ -36,10 +39,12 @@ class RoleState(commands.Cog):
             if role is None:
                 role = await member.guild.create_role(name=self.configs["guest_role"])
 
-            print(f"[b yellow] Assigning role {role.name} to {member.name}")
+            self.logger.info(f"Assigning role {role.name} to {member.name}")
             await member.add_roles(role)
         except Exception as error:
-            print(f"[b red] Error assigning role to {member.name} - {error}")
+            self.logger.error(
+                f"Error assigning role to {member.name}", json_data=str(error)
+            )
             return
 
     @commands.Cog.listener("on_raw_reaction_add")
@@ -53,7 +58,7 @@ class RoleState(commands.Cog):
 
         ############################## TESTING MODE ##############################
         if self.flags["disable_role_react"] and self.flags["enable_testing"]:
-            print(f"[b yellow] Role reaction is disabled by test flags.")
+            self.logger.warn("Role reaction is disabled by test flags.")
             return
         ##########################################################################
 
@@ -64,7 +69,7 @@ class RoleState(commands.Cog):
         if payload.message_id not in list_of_post:
             return
 
-        print(f"[b yellow] Role reaction added by {member.name}")
+        self.logger.info(f"Role reaction added by {member.name}")
 
         emoji = str(payload.emoji)
 
@@ -81,15 +86,17 @@ class RoleState(commands.Cog):
             try:
                 role = discord.utils.get(guild.roles, name=role_name)
                 if role:
-                    print(f"[b yellow] Assigning role {role.name} to {member.name}")
+                    self.logger.info(f"Assigning role {role.name} to {member.name}")
                     await member.add_roles(role)
                 else:
-                    print(f"[b yellow] Role {role_name} not found")
+                    self.logger.info(f"Role {role_name} not found")
             except Exception as error:
-                print(f"[b red] Error assigning role to {member.name} - {error}")
+                self.logger.error(
+                    f"Error assigning role to {member.name}", json_data=str(error)
+                )
                 return
         else:
-            print(f"[b red] Role not found.")
+            self.logger.warn("Role not found.")
 
     @commands.Cog.listener("on_raw_reaction_remove")
     async def removeRoleOnUnReact(self, payload):
@@ -102,7 +109,7 @@ class RoleState(commands.Cog):
 
         ############################## TESTING MODE ##############################
         if self.flags["disable_role_react"] and self.flags["enable_testing"]:
-            print(f"[b yellow] Role reaction is disabled by test flags.")
+            self.logger.warn("Role reaction is disabled by test flags.")
             return
         ##########################################################################
 
@@ -113,7 +120,7 @@ class RoleState(commands.Cog):
         if payload.message_id not in list_of_post:
             return
 
-        print(f"[b yellow] Role reaction removed by {member.name}")
+        self.logger.info(f"Role reaction removed by {member.name}")
 
         emoji = str(payload.emoji)
         role_name = next(
@@ -129,12 +136,14 @@ class RoleState(commands.Cog):
             try:
                 role = discord.utils.get(guild.roles, name=role_name)
                 if role:
-                    print(f"[b yellow] Removing role {role.name} from {member.name}")
+                    self.logger.info(f"Removing role {role.name} from {member.name}")
                     await member.remove_roles(role)
                 else:
-                    print(f"[b yellow] Role {role_name} not found")
+                    self.logger.warn(f"Role {role_name} not found")
             except Exception as error:
-                print(f"[b red] Error removing role from {member.name} - {error}")
+                self.logger.error(
+                    f"Error removing role from {member.name}", json_data=str(error)
+                )
                 return
         else:
-            print(f"[b red] Role not found.")
+            self.logger.warn("Role not found.")

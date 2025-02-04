@@ -35,6 +35,7 @@ def_flags = {
 
 def_path = {
     "logs_dir": "./logs/bot.log",
+    "debugs_dir": "./logs/debug.log",
 }
 
 

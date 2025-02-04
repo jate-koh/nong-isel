@@ -1,4 +1,5 @@
 import discord
+from discord import app_commands
 from discord.ext import commands
 
 from constants import default_configs
@@ -20,9 +21,12 @@ class InfoCommands(commands.Cog):
             self.configs = default_configs()
 
     @commands.hybrid_command(
-        name="info", with_app_command=True, aliases=["server", "guild", "guildinfo"]
+        name="info",
+        description="Get information about the server",
+        with_app_command=True,
     )
     @commands.has_any_role(conf["admin_role"])
+    @app_commands.guilds()
     async def info(self, ctx):
 
         user = ctx.author
@@ -33,16 +37,18 @@ class InfoCommands(commands.Cog):
             description=f"Server Name: {ctx.guild.name}\nMember Count: {ctx.guild.member_count}\nCreated At: {ctx.guild.created_at}",
             color=discord.Color.blue(),
         )
-        embed.set_footer(text=f"Requested by {user.name} icon_url=user.avatar.url")
+        embed.set_footer(text=f"Requested by {user.name}", icon_url=user.avatar.url)
         await ctx.reply(embed=embed)
 
     @commands.hybrid_command(
         name="sync",
+        description="Sync slash commands",
         with_app_command=True,
     )
+    @commands.has_any_role(conf["admin_role"])
     async def sync(self, ctx):
         self.logger.info("Syncing slash commands.")
-        await self.bot.tree.sync(discord.Object(id=conf["guild_id"]))
+        await self.bot.tree.sync(guild=discord.Object(id=conf["guild_id"]))
         await ctx.reply("Slash commands synced.")
 
 

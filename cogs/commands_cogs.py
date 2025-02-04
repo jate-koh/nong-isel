@@ -36,6 +36,7 @@ async def setup(bot, configs=None, flags=None):
         await bot.add_cog(
             RoleGroupCommands(
                 bot=bot,
+                logger=logger,
                 configs=configs,
                 flags=flags,
             )
@@ -43,6 +44,7 @@ async def setup(bot, configs=None, flags=None):
         await bot.add_cog(
             RoleGroupChatCommands(
                 bot=bot,
+                logger=logger,
                 configs=configs,
                 flags=flags,
             )

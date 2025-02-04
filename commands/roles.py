@@ -1,7 +1,6 @@
 import math
 import discord
 from discord.ext import commands
-from rich import print
 
 from utils import read_message_txt
 from constants import default_configs, default_flags
@@ -15,8 +14,13 @@ from settings import configs as conf
 
 class RoleGroupCommands(commands.Cog):
 
-    def __init__(self, bot, configs=None, flags=None):
+    def __init__(self, bot, logger, configs=None, flags=None):
+        if bot is None or logger is None:
+            raise ValueError("bot and logger are required")
+
         self.bot = bot
+        self.logger = logger
+
         if configs is not None:
             self.configs = configs
         else:
@@ -26,54 +30,55 @@ class RoleGroupCommands(commands.Cog):
         else:
             self.flags = default_flags()
 
-    @commands.command(
-        name="createroles", aliases=["setuproles", "setuprole", "createrole"]
+    @commands.hybrid_command(
+        name="createroles",
+        with_app_command=True,
     )
     @commands.has_any_role(conf["admin_role"])
     async def create_roles(self, ctx, num_roles=conf["max_roles"], clear_all=False):
-        print(f"[b yellow] Running pre-setup...")
-
-        if self.configs is not default_configs():
-            print(f"[b yellow] Custom configuration are used for creating roles")
-        else:
-            print(f"[b yellow] Using default configs for creating roles")
+        self.logger.info(f"Running check...")
 
         guild = ctx.guild
         try:
+            # Read from message text
             message_id, channel_id, current_num_roles = read_message_txt()
 
             # Check for exisitng messages
             if message_id is not None:
-                print(f"[b yellow] Existing messages found in local text.")
+                self.logger.info(f"Existing messages found in local text.")
 
                 channel = self.bot.get_channel(channel_id)
                 if channel:
                     for id in message_id:
-                        print(f"[b yellow] Deleting message {id}")
+                        self.logger.info(f"Deleting exisiting message {id}")
                         try:
                             message = await channel.fetch_message(id)
                             await message.delete()
                         except discord.NotFound:
-                            print(f"[b yellow] Message {id} not found.")
+                            self.logger.warn(f"Message {id} not found.")
             else:
-                print(f"[b yellow] No existing messages found.")
+                self.logger.info("No existing messages found.")
 
             # Check for existing number of roles
             if current_num_roles is not None:
-                print(f"[b yellow] Existing number of roles found in local text.")
+                self.logger.info(" Existing number of roles found in local text.")
 
+                # Check if number of roles is valid
+                # If Exceeds max number of roles
                 if num_roles > self.configs["max_roles"]:
                     await ctx.send(
                         f"Maximum number of roles is {self.configs['max_roles']}"
                     )
                     return
 
+                # If less than min number of roles
                 if num_roles < self.configs["min_roles"]:
                     await ctx.send(
                         f"Minimum number of roles is {self.configs['min_roles']}"
                     )
                     return
 
+                # If less than current number of roles, remove excess
                 if num_roles < current_num_roles:
                     await self.clear_roles(
                         ctx,
@@ -82,8 +87,9 @@ class RoleGroupCommands(commands.Cog):
                         prefix=self.configs["role_prefix"],
                     )
 
+                # If clear all is set
                 if clear_all:
-                    print(f"[b yellow] Removing all existing roles...")
+                    self.logger.info("Removing all existing roles...")
                     await self.clear_roles(
                         ctx,
                         start=1,
@@ -91,13 +97,16 @@ class RoleGroupCommands(commands.Cog):
                         prefix=self.configs["role_prefix"],
                     )
             else:
-                print(f"[b yellow] No existing number of roles found.")
+                self.logger.info(f"No existing number of roles found.")
 
         except Exception as error:
-            print(f"[b red] Error in preparation for setting up group roles- {error}")
+            self.logger.error(
+                "Error in preparation for setting up group roles.",
+                json_data=str(error),
+            )
             return
 
-        print(f"[b yellow] Setting up group roles and post for acquiring roles...")
+        self.logger.info("Setting up group roles and post for acquiring roles...")
 
         roles_to_emojis = {
             self.configs["role_prefix"] + str(i): self.configs["emojis"][str(i)]
@@ -108,12 +117,15 @@ class RoleGroupCommands(commands.Cog):
         for role_name in roles_to_emojis.keys():
             if not discord.utils.get(guild.roles, name=role_name):
                 try:
-                    print(f"[b yellow] Creating role: {role_name}")
+                    self.logger.debug(f"Creating role: {role_name}")
                     await guild.create_role(name=role_name)
                 except Exception as error:
-                    print(f"[b red] Error creating role: {role_name} - {error}")
+                    self.logger.error(
+                        f"Error creating role: {role_name}",
+                        json_data=str(error),
+                    )
             else:
-                print(f"[b yellow] Role {role_name} already exists.")
+                self.logger.warn(f"Role {role_name} already exists.")
 
         embed = discord.Embed(
             title="Acquire your Discord role here!",
@@ -128,7 +140,7 @@ class RoleGroupCommands(commands.Cog):
         react_posts = []
         for i in range(1, num_of_post):
             try:
-                print(f"[b yellow] Sending react post {i + 1}...")
+                self.logger.debug(f"Sending react post {i + 1}...")
                 embed = discord.Embed(
                     title=f"Group numbers: {20 * (i - 1) + 1} to {min(num_roles, 20 * i)}",
                     color=discord.Color.blue(),
@@ -136,10 +148,12 @@ class RoleGroupCommands(commands.Cog):
                 post = await message.channel.send(embed=embed)
                 react_posts.append(post)
             except Exception as error:
-                print(f"[b red] Error sending react post {i + 1} - {error}")
+                self.logger.error(
+                    f"Error sending react post {i + 1}", json_data=str(error)
+                )
 
         # Add reaction to each post (each post has reaction limit of 20)
-        print(f"[b yellow] Adding reactions to react post...")
+        self.logger.info("Adding reactions to react post...")
 
         chunks = []
         for post_num in range(1, num_of_post):
@@ -150,22 +164,21 @@ class RoleGroupCommands(commands.Cog):
                 )
             }
             chunks.append(chunk)
-        print(chunks)
 
         for post in react_posts:
             chunk_no = react_posts.index(post) + 1
             try:
                 emoji_dict = chunks[chunk_no - 1]
                 for emoji, role in emoji_dict.items():
-                    print(
-                        f"[b yellow] Adding reaction {emoji}, {role} to post {post.id}"
+                    self.logger.debug(
+                        f"Adding reaction {emoji}, {role} to post {post.id}",
                     )
                     await post.add_reaction(role)
             except Exception as error:
-                print(f"[b red] Error adding reactions - {error}")
+                self.logger.error("Error adding reactions", json_data=str(error))
 
         # Save the message ID for tracking reactions
-        with open("message_id.txt", "w+") as f:
+        with open("message_id.txt", "w+", encoding="utf-8") as f:
             f.write(str(message.id) + ",")  # Message ID of the initial post
             f.write(
                 ",".join(str(post.id) for post in react_posts)
@@ -176,12 +189,12 @@ class RoleGroupCommands(commands.Cog):
             f.write(str(num_roles))  # Number of roles in the third line
             f.close()  # Close the file
 
-        print("[b green] Role acquisition posts completed!")
+        self.logger.info("Role acquisition posts completed!")
 
     # TODO:
     # async def assign_roles_to_groups(self, ctx, roles):
 
-    @commands.command(name="clearroles")
+    @commands.hybrid_command(name="clearroles", with_app_command=True)
     @commands.has_any_role(conf["admin_role"])
     async def clear_roles(
         self,
@@ -190,10 +203,9 @@ class RoleGroupCommands(commands.Cog):
         end: int = conf["max_roles"],
         prefix: str = conf["role_prefix"],
     ):
+        self.logger.info(f"Clearing roles...")
+
         guild = ctx.guild
-
-        print(f"[b yellow] Clearing roles...")
-
         try:
             for i in range(start, end + 1):
                 # Remove all special symbols using regex
@@ -201,19 +213,23 @@ class RoleGroupCommands(commands.Cog):
 
                 role = discord.utils.get(guild.roles, name=f"{role_name}")
                 if role is not None:
-                    print(f"[b yellow] Removing role {role.name}")
+                    self.logger.debug(f"Removing role {role.name}")
                     await role.delete()
                 else:
-                    print(f"[b yellow] Role {role_name} not found.")
+                    self.logger.warn(f"Role {role_name} not found.")
 
         except Exception as error:
-            print(f"[b red] Error clearing roles - {error}")
+            self.logger.error("Error clearing roles", json_data=str(error))
 
 
 class RoleGroupChatCommands(commands.Cog):
 
-    def __init__(self, bot, configs=None, flags=None):
+    def __init__(self, bot, logger, configs=None, flags=None):
+        if bot is None or logger is None:
+            raise ValueError("bot and logger are required")
+
         self.bot = bot
+        self.logger = logger
         if configs is not None:
             self.configs = configs
         else:
@@ -225,13 +241,6 @@ class RoleGroupChatCommands(commands.Cog):
 
     @commands.command(
         name="createchat",
-        aliases=[
-            "createrolechat",
-            "creategroupchat",
-            "setuproleschat",
-            "setuprolechat",
-            "createroleschat",
-        ],
     )
     @commands.has_any_role(conf["admin_role"])
     async def create_group_chat(self, ctx, clear_all: bool = False):
@@ -240,20 +249,24 @@ class RoleGroupChatCommands(commands.Cog):
         try:
             current_num_roles = read_message_txt(dict=True).get("current_role_num")
 
+            # Check if no roles is created prior
             if current_num_roles is None:
                 await ctx.send("No roles found. Create role first!")
                 return
 
+            # If chat number is lower than limit
             if current_num_roles < self.configs["min_roles"]:
                 await ctx.send("Minimum number of roles is 3.")
                 return
 
+            # If chat number is higher than limit
             if current_num_roles > self.configs["max_roles"]:
                 await ctx.send("Maximum number of roles is 63.")
                 return
 
+            # If remove all existing channel flag is set
             if clear_all:
-                print(f"[b yellow] Removing existing group channels...")
+                self.logger.info("Removing existing group channels...")
                 await self.clear_channel(
                     ctx,
                     start=1,
@@ -263,10 +276,12 @@ class RoleGroupChatCommands(commands.Cog):
                 )
 
         except Exception as error:
-            print(f"[b red] Error in pre-setup of group chat setup - {error}")
+            self.logger.error(
+                "Error in pre-setup of group chat setup", json_data=str(error)
+            )
             return
 
-        print(f"[b yellow] Setting up group chat...")
+        self.logger.info("Setting up group chat...")
 
         # List of categories for second retry
         unsuccessful = []  # List of unsuccessful categories creation
@@ -280,10 +295,10 @@ class RoleGroupChatCommands(commands.Cog):
                 new_category = discord.utils.get(guild.categories, name=category_name)
 
                 if not new_category:
-                    print(f"[b yellow] Creating category: {category_name}")
+                    self.logger.debug(f"Creating category: {category_name}")
                     await guild.create_category(name=category_name)
                 else:
-                    print(f"[b yellow] Category {category_name} already exists.")
+                    self.logger.warn(f"Category {category_name} already exists.")
 
                 # Check if can be fetched
                 if new_category:
@@ -294,8 +309,8 @@ class RoleGroupChatCommands(commands.Cog):
                     voice_name = f"{self.configs['group_prefix']}{i}"
                     if len(str(i)) == 1:  # If it is one digit, add a 0 in front
                         voice_name = f"{self.configs['group_prefix']}0{i}"
-                    print(
-                        f"[b yellow] Creating text channel {text_name} and voice channel {voice_name} in category"
+                    self.logger.debug(
+                        f"Creating text channel {text_name} and voice channel {voice_name} in category",
                     )
                     await guild.create_text_channel(text_name, category=new_category)
                     await guild.create_voice_channel(voice_name, category=new_category)
@@ -306,8 +321,8 @@ class RoleGroupChatCommands(commands.Cog):
                     )
                     ta_role = discord.utils.get(guild.roles, name="TA")
 
-                    print(
-                        f"[b yellow] Setting permissions for category {new_category.name}"
+                    self.logger.debug(
+                        f"Setting permissions for category {new_category.name}",
                     )
                     await new_category.set_permissions(
                         guild.default_role, read_messages=False, connect=False
@@ -319,15 +334,17 @@ class RoleGroupChatCommands(commands.Cog):
                         ta_role, read_messages=True, connect=True
                     )
                 else:
-                    print(f"[b red] Category {category_name} not found.")
+                    self.logger.warn(f"Category {category_name} not found.")
                     unsuccessful.append(category_name)
 
             except Exception as error:
-                print(f"[b red] Error creating group channels - {error}")
+                self.logger.error(
+                    f"Error creating group channels", json_data=str(error)
+                )
 
         await ctx.send("Group chat setup complete!")
-        print(f"[b green] Group chat setup complete!")
-        print(f"[b yellow] Unsuccessful categories: {unsuccessful}")
+        self.logger.info("Group chat setup complete!")
+        self.logger.warn(f"Unsuccessful categories: {unsuccessful}")
 
     @commands.command(name="clearchannel")
     @commands.has_any_role(conf["admin_role"])
@@ -341,7 +358,7 @@ class RoleGroupChatCommands(commands.Cog):
     ):
         guild = ctx.guild
 
-        print(f"[b yellow] Clearing channels...")
+        self.logger.info("Clearing channels...")
 
         try:
             for i in range(start, end + 1):
@@ -358,10 +375,10 @@ class RoleGroupChatCommands(commands.Cog):
 
                 text = discord.utils.get(guild.text_channels, name=f"{text_name}")
                 if text is not None:
-                    print(f"[b yellow] Removing text channels {text.name}")
+                    self.logger.debug(f"Removing text channels {text.name}")
                     await text.delete()
                 else:
-                    print(f"[b yellow] Text channel {text_name} not found.")
+                    self.logger.warn(f"Text channel {text_name} not found.")
 
                 # If it is one digit, add a 0 in front
                 voice_name = f"{prefix}{i}"
@@ -369,10 +386,10 @@ class RoleGroupChatCommands(commands.Cog):
                     voice_name = f"{prefix}0{i}"
                 voice = discord.utils.get(guild.voice_channels, name=f"{voice_name}")
                 if voice is not None:
-                    print(f"[b yellow] Removing role's voice channels {voice.name}")
+                    self.logger.debug(f"Removing role's voice channels {voice.name}")
                     await voice.delete()
                 else:
-                    print(f"[b yellow] Voice channel {voice_name} not found.")
+                    self.logger.warn(f"Voice channel {voice_name} not found.")
 
                 # If it is one digit, add a 0 in front
                 category_name = f"{prefix}{i}"
@@ -380,15 +397,15 @@ class RoleGroupChatCommands(commands.Cog):
                     category_name = f"{prefix}0{i}"
                 category = discord.utils.get(guild.categories, name=f"{category_name}")
                 if category is not None:
-                    print(f"[b yellow] Removing category {category.name}")
+                    self.logger.debug(f"Removing category {category.name}")
                     await category.delete()
                 else:
-                    print(f"[b yellow] Category {category_name} not found.")
+                    self.logger.warn(f"Category {category_name} not found.")
 
         except Exception as error:
-            print(f"[b red] Error clearing channels - {error}")
+            self.logger.info(f"[b red] Error clearing channels - {error}")
 
-        # write empty message_id.txt
+        # Clear message text
         if clear_txt is True:
-            with open("message_id.txt", "w+") as f:
+            with open("message_id.txt", "w+", encoding="utf-8") as f:
                 f.write("")
