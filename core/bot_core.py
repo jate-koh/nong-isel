@@ -1,13 +1,15 @@
 import asyncio
 from discord import Intents
 from discord.ext import commands
-from rich import print
 
 from constants import default_configs, default_flags
+from utilities import get_logger
 
 
 class BotCore:
     def __init__(self, configs=None, flags=None, intents=None):
+        self.logger = get_logger(module="Core")
+
         if configs is None:
             self.configs = default_configs()
         else:
@@ -29,11 +31,11 @@ class BotCore:
             command_prefix=self.configs["prefix"], intents=self.intents
         )
 
-        print(f"[b green] Bot Initialized.")
+        self.logger.info("Core Initialized.")
 
     def setupCogs(self, states_cogs, commands_cogs):
         if states_cogs is None and commands_cogs is None:
-            print(f"[b yellow] No cogs to load.")
+            self.logger.warn("No cogs provided.")
             return
 
         if states_cogs is not None:
@@ -65,11 +67,11 @@ class BotCore:
                 try:
                     asyncio.run(cog)
                 except Exception as error:
-                    print(f"[b red] Error loading cog: {cog} - {error}")
+                    self.logger.error(f"Error loading cog", json_data=error)
 
     def run(self):
         if self.configs["token"]:
-            print(f"[b green] Running bot...")
+            self.logger.info("Running bot...")
             self.bot.run(self.configs["token"])
         else:
             print(f"[b red] No token provided.")

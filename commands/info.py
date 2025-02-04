@@ -1,6 +1,5 @@
 import discord
 from discord.ext import commands
-from rich import print
 
 from constants import default_configs
 from settings import configs as conf
@@ -8,8 +7,13 @@ from settings import configs as conf
 
 class InfoCommands(commands.Cog):
 
-    def __init__(self, bot, configs=None):
+    def __init__(self, bot, logger, configs=None):
+        if bot is None or logger is None:
+            raise ValueError("bot and logger are required")
+
         self.bot = bot
+        self.logger = logger
+
         if configs is not None:
             self.configs = configs
         else:
@@ -22,7 +26,7 @@ class InfoCommands(commands.Cog):
     async def info(self, ctx):
 
         user = ctx.author
-        print(f"[b yellow] Server information requested by {user.name}")
+        self.logger.info(f"{user} requested server info.")
 
         embed = discord.Embed(
             title="Server Information",
@@ -37,7 +41,7 @@ class InfoCommands(commands.Cog):
         with_app_command=True,
     )
     async def sync(self, ctx):
-        print(discord.Object(id=conf["guild_id"]))
+        self.logger.info("Syncing slash commands.")
         await self.bot.tree.sync(discord.Object(id=conf["guild_id"]))
         await ctx.reply("Slash commands synced.")
 

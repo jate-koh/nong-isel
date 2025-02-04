@@ -23,6 +23,7 @@ def_configs = {
     "min_roles": 5,
     "max_roles": 60,
     "prefix": "!",
+    "gmt": 7,
 }
 
 def_flags = {
@@ -32,6 +33,10 @@ def_flags = {
     "disable_role_react": False,
 }
 
+def_path = {
+    "logs_dir": "./logs/bot.log",
+}
+
 
 def default_configs():
     return def_configs
@@ -39,3 +44,7 @@ def default_configs():
 
 def default_flags():
     return def_flags
+
+
+def default_path():
+    return def_path

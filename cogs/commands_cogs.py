@@ -1,20 +1,21 @@
-from rich import print
-
 from constants import default_configs, default_flags
 from commands import InfoCommands, RoleGroupChatCommands, RoleGroupCommands
+from utilities import get_logger
 
 
 async def setup(bot, configs=None, flags=None):
-    print(f"[b green] Loading commands...")
+
+    logger = get_logger(module="Commands")
+    logger.info("Loading commands...")
 
     if bot is None:
-        print(f"[b red] Bot object is None.")
-        return
+        logger.error("No bot provided")
+        raise ValueError("No bot provided")
 
     if flags is not None:
-        print(f"[b yellow] Flags are set: {flags}")
+        logger.info(f"Flags set.", json_data=flags)
     else:
-        print(f"[b yellow] Using default flags for Commands Cogs.")
+        logger.warn("Using default flags.")
         flags = default_flags()
 
     if configs is not None:
@@ -24,9 +25,9 @@ async def setup(bot, configs=None, flags=None):
             if valid_key not in ["token", "guild_id", "emojis"]
         }
         valid["emojis"] = f"{str(len(configs["emojis"]))} emojis"
-        print(f"[b yellow] Configs are set for Commands Cogs: {valid}")
+        logger.info(f"Configs set.", json_data=valid)
     else:
-        print(f"[b yellow] Using default configs for Commands Cogs.")
+        logger.warn("Using default configs.")
         configs = default_configs()
 
     # Add cogs and slashes
@@ -51,9 +52,10 @@ async def setup(bot, configs=None, flags=None):
         await bot.add_cog(
             InfoCommands(
                 bot=bot,
+                logger=logger,
                 configs=configs,
             )
         )
 
     except Exception as error:
-        print(f"[b red] Error loading commands - {error}")
+        logger.error(f"Error loading commands.", json_data=str(error))

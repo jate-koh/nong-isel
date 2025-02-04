@@ -1,6 +1,5 @@
 # System Libs
 import sys
-from rich import print
 
 # Discord Bot Libs
 from discord import Intents
@@ -9,11 +8,12 @@ from discord import Intents
 from core import BotCore
 from settings import configs, test_flags
 from cogs import states_cogs, commands_cogs
+from utilities import log
 
 
 def main():
-    print(f"[b yellow] Python version: {sys.version}")
-    print(f"[b green] Initializing...")
+    log(f"Python version: {sys.version}", type="info")
+    log(f"Initializing...", type="info")
 
     # Intents
     intents = Intents.default()
@@ -21,9 +21,12 @@ def main():
     intents.message_content = True
 
     # Bots
-    bot = BotCore(configs=configs, flags=test_flags, intents=intents)
-    bot.setupCogs(states_cogs=states_cogs, commands_cogs=commands_cogs)
-    bot.run()
+    try:
+        bot = BotCore(configs=configs, flags=test_flags, intents=intents)
+        bot.setupCogs(states_cogs=states_cogs, commands_cogs=commands_cogs)
+        bot.run()
+    except Exception as err:
+        log(f"Error!", type="error", json_data=str(err))
 
 
 if __name__ == "__main__":
