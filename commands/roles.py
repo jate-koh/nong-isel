@@ -138,9 +138,9 @@ class RoleGroupCommands(commands.Cog):
         num_of_post = int(math.floor(num_roles / 20) + 1)
 
         react_posts = []
-        for i in range(1, num_of_post):
+        for i in range(1, num_of_post + 1):
             try:
-                self.logger.debug(f"Sending react post {i + 1}...")
+                self.logger.debug(f"Sending react post {i}...")
                 embed = discord.Embed(
                     title=f"Group numbers: {20 * (i - 1) + 1} to {min(num_roles, 20 * i)}",
                     color=discord.Color.blue(),
@@ -156,7 +156,7 @@ class RoleGroupCommands(commands.Cog):
         self.logger.info("Adding reactions to react post...")
 
         chunks = []
-        for post_num in range(1, num_of_post):
+        for post_num in range(1, num_of_post + 1):
             chunk = {
                 str(i): roles_to_emojis.get(f"{self.configs["role_prefix"]}{i}")
                 for i in range(
@@ -164,6 +164,8 @@ class RoleGroupCommands(commands.Cog):
                 )
             }
             chunks.append(chunk)
+
+        self.logger.debug(f"Chunks", json_data=chunk)
 
         for post in react_posts:
             chunk_no = react_posts.index(post) + 1
