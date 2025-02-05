@@ -2,13 +2,16 @@ import asyncio
 from discord import Intents
 from discord.ext import commands
 
-from constants import default_configs, default_flags
+from constants import default_configs, default_flags, default_path
+from database import get_database
 from utilities import get_logger
 
 
 class BotCore:
     def __init__(self, configs=None, flags=None, intents=None):
         self.logger = get_logger(module="Core")
+        self.db = get_database(default_path()["db_dir"])
+        self.db.init_schema()
 
         if configs is None:
             self.configs = default_configs()
@@ -44,6 +47,7 @@ class BotCore:
                     bot=self.bot,
                     configs=self.configs,
                     flags=self.flags,
+                    db=self.db,
                 )
             ]
         else:

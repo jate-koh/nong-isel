@@ -3,7 +3,7 @@ from constants import default_configs, default_flags
 from utilities import get_logger
 
 
-async def setup(bot, configs=None, flags=None):
+async def setup(bot, db, configs=None, flags=None):
 
     logger = get_logger(module="States")
     logger.info("Loading states...")
@@ -11,6 +11,10 @@ async def setup(bot, configs=None, flags=None):
     if bot is None:
         logger.error("No bot is provided")
         raise ValueError("No bot is provided.")
+
+    if db is None:
+        logger.error("No db is provided")
+        raise ValueError("No db is provided.")
 
     if flags is not None:
         logger.info(f"Flags set.", json_data=flags)
@@ -44,6 +48,7 @@ async def setup(bot, configs=None, flags=None):
         await bot.add_cog(
             MessagesState(
                 bot=bot,
+                # logger=logger,
                 configs=configs,
                 flags=flags,
             )
@@ -54,6 +59,7 @@ async def setup(bot, configs=None, flags=None):
             RoleState(
                 bot=bot,
                 logger=logger,
+                db=db,
                 configs=configs,
                 flags=flags,
             )

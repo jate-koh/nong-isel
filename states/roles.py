@@ -6,12 +6,14 @@ from constants import default_configs, default_flags
 
 
 class RoleState(commands.Cog):
-    def __init__(self, bot, logger, configs=None, flags=None):
-        if bot is None or logger is None:
-            raise ValueError("bot and logger are required")
+    def __init__(self, bot, db, logger, configs=None, flags=None):
+        if bot is None or logger is None or db is None:
+            raise ValueError("bot, database, and logger are required")
 
         self.bot = bot
+        self.db = db
         self.logger = logger
+
         if configs is not None:
             self.configs = configs
         else:
@@ -84,12 +86,23 @@ class RoleState(commands.Cog):
 
         if role_name:
             try:
+                # Assign a role to the new member
                 role = discord.utils.get(guild.roles, name=role_name)
                 if role:
                     self.logger.info(f"Assigning role {role.name} to {member.name}")
                     await member.add_roles(role)
                 else:
                     self.logger.info(f"Role {role_name} not found")
+
+                # Remove anonymous/guest role
+                role = discord.utils.get(guild.roles, name=self.configs["guest_role"])
+                if role:
+                    await member.remove_roles(role)
+                else:
+                    self.logger.info(f"Role {self.configs['guest_role']} not found")
+
+                self.db.insert_usergroup(member.id, role.id)
+
             except Exception as error:
                 self.logger.error(
                     f"Error assigning role to {member.name}", json_data=str(error)
@@ -134,12 +147,21 @@ class RoleState(commands.Cog):
 
         if role_name:
             try:
+                # Remove role from member
                 role = discord.utils.get(guild.roles, name=role_name)
                 if role:
                     self.logger.info(f"Removing role {role.name} from {member.name}")
                     await member.remove_roles(role)
                 else:
                     self.logger.warn(f"Role {role_name} not found")
+
+                # Add anonymous/guest role
+                role = discord.utils.get(guild.roles, name=self.configs["guest_role"])
+                if role:
+                    await member.add_roles(role)
+                else:
+                    self.logger.info(f"Role {self.configs['guest_role']} not found")
+
             except Exception as error:
                 self.logger.error(
                     f"Error removing role from {member.name}", json_data=str(error)

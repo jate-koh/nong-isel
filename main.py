@@ -6,8 +6,8 @@ from discord import Intents
 
 # Bots Components
 from core import BotCore
-from settings import configs, test_flags
 from cogs import states_cogs, commands_cogs
+from settings import configs, test_flags
 from utilities import log
 
 
@@ -20,7 +20,6 @@ def main():
     intents.members = True
     intents.message_content = True
 
-    # Bots
     try:
         bot = BotCore(configs=configs, flags=test_flags, intents=intents)
         bot.setupCogs(states_cogs=states_cogs, commands_cogs=commands_cogs)
