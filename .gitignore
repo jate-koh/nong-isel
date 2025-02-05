@@ -4,6 +4,9 @@ message_id.txt
 **/*archive*
 **/*private*
 
+# Database
+**/*.sqlite*
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
