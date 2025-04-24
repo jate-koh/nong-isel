@@ -3,6 +3,8 @@ ticket_id.txt
 message_id.txt
 **/*archive*
 **/*private*
+**/*script*
+**/*.cfg
 
 # Database
 **/*.sqlite*
