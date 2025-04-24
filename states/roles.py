@@ -75,6 +75,7 @@ class RoleState(commands.Cog):
 
         emoji = str(payload.emoji)
 
+
         role_name = next(
             (
                 f"{self.configs['role_prefix']}{name}"
@@ -83,6 +84,8 @@ class RoleState(commands.Cog):
             ),
             None,
         )
+
+        # print(emoji)
 
         if role_name:
             try:
