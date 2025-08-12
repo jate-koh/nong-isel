@@ -1,0 +1,10 @@
+services:
+  nong-isel:
+    build: .
+    restart: unless-stopped
+    env_file:
+      - .env
+    container_name: nong-isel
+    volumes:
+      - ./ticket_id.txt:/ticket_id.txt
+      - ./message_id.txt:/message_id.txt
