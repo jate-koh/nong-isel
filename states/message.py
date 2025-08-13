@@ -1,4 +1,5 @@
 import discord
+import re
 from discord.ext import commands
 from rich import print
 from sonyflake import SonyFlake
@@ -37,6 +38,21 @@ class MessagesState(commands.Cog):
                 return
             ##########################################################################
 
+            # Get the member's name for use in the ticket's channel. This is also the part where we enforce regex
+            regex_str = re.compile(r"^(\d+)_(\d+)_(.+)$")
+            member = guild.get_member(message.author.id)
+            try:
+                matchgroups = regex_str.match(member.nick)
+                groupno, studentid, studentname = matchgroups.groups()
+            except AttributeError: # .groups() called on a broken match group? user's fault.
+                embed = discord.Embed(
+                    title="Incorrect name format",
+                    description="Please set your nickname according to the format before proceeding: `GroupNo_StudentID_Name`",
+                    color=discord.Color.red(),
+                )
+                await message.reply(embed=embed)
+                return
+            
             # Check if author id is in records
             try:
                 with open("ticket_id.txt", "r") as f:
@@ -68,6 +84,7 @@ class MessagesState(commands.Cog):
             # Create ticket ID
             ticket_id = sf.next_id()
             print(f"[b yellow] Generated ticket ID: {ticket_id}")
+
 
             # Make a relay message to Q&A channel
             try:
@@ -111,7 +128,7 @@ class MessagesState(commands.Cog):
                     guild.roles, name=self.configs["admin_role"]
                 ): discord.PermissionOverwrite(view_channel=True),
             }
-
+    
             # Add staff roles to the overwrites roles map
             for role in self.configs["staff_role"]:
                 staff_role = discord.utils.get(guild.roles, name=role)
@@ -136,7 +153,7 @@ class MessagesState(commands.Cog):
                     return
 
                 ticket_text_channel = await categories.create_text_channel(
-                    name=ticket_id,
+                    name = f"{studentname}{' Ticket' if studentname[-1] in ('s', 'S') else "'s Ticket"}",
                     overwrites=overwrites,
                 )
             except Exception as error:
