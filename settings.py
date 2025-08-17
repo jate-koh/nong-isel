@@ -9,6 +9,8 @@ try:
     load_dotenv()
     token = os.getenv("BOT_TOKEN")
     guild_id = os.getenv("GUILD_ID")
+    qna_channel = os.getenv("QNA_CHANNEL")
+    qna_category = os.getenv("QNA_CATEGORY")
 
 except Exception as error:
     print(f"[b red] Error loading environment variables!")
@@ -47,8 +49,8 @@ configs = {
     "min_roles": 3,
     "max_roles": 63,
     "prefix": "!",
-    "qna_channel": "1326000721350492215",
-    "qna_category": "1327195958651387967",
+    "qna_channel": qna_channel,
+    "qna_category": qna_category,
     "emojis": emojis,
 }
 
