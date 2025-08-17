@@ -44,7 +44,7 @@ class MessagesState(commands.Cog):
             try:
                 matchgroups = regex_str.match(member.nick)
                 groupno, studentid, studentname = matchgroups.groups()
-            except AttributeError: # .groups() called on a broken match group? user's fault.
+            except (AttributeError, TypeError): # .groups() called on a broken match group? user's fault.
                 embed = discord.Embed(
                     title="Incorrect name format",
                     description="Please set your nickname according to the format before proceeding: `GroupNo_StudentID_Name`",
@@ -152,8 +152,10 @@ class MessagesState(commands.Cog):
                     )
                     return
 
+                channelname = f"{studentname}{' Ticket' if studentname[-1] in ('s', 'S') else "'s Ticket"}"
+
                 ticket_text_channel = await categories.create_text_channel(
-                    name = f"{studentname}{' Ticket' if studentname[-1] in ('s', 'S') else "'s Ticket"}",
+                    channelname,
                     overwrites=overwrites,
                 )
             except Exception as error:
