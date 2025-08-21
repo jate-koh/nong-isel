@@ -152,7 +152,7 @@ class MessagesState(commands.Cog):
                     )
                     return
 
-                channelname = f"{studentname}{' Ticket' if studentname[-1] in ('s', 'S') else "'s Ticket"}"
+                channelname = f"{studentid[-2:]}-{studentname}s-ticket"
 
                 ticket_text_channel = await categories.create_text_channel(
                     channelname,
