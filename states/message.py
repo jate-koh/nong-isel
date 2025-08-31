@@ -152,7 +152,7 @@ class MessagesState(commands.Cog):
                     )
                     return
 
-                channelname = f"{studentid[-2:]}-{studentname}s-ticket"
+                channelname = f"{studentid}-{studentname}"
 
                 ticket_text_channel = await categories.create_text_channel(
                     channelname,
@@ -222,3 +222,4 @@ class MessagesState(commands.Cog):
             except Exception as error:
                 print(f"[b red] Error appending ticket ID to ticket_id.txt - {error}")
                 return
+
