@@ -6,5 +6,5 @@ services:
       - .env
     container_name: nong-isel
     volumes:
-      - ./ticket_id.txt:/ticket_id.txt
-      - ./message_id.txt:/message_id.txt
+      - ./ticket_id.txt:/usr/src/bot/ticket_id.txt
+      - ./message_id.txt:/usr/src/bot/message_id.txt
