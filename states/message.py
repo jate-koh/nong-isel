@@ -158,6 +158,8 @@ class MessagesState(commands.Cog):
                     channelname,
                     overwrites=overwrites,
                 )
+
+                await ticket_text_channel.move(beginning=True,category=categories)
             except Exception as error:
                 print(
                     f"[b red] Error creating ticket text channel in {self.configs['qna_category']} - {error}"
