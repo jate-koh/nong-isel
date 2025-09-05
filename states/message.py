@@ -134,6 +134,10 @@ class MessagesState(commands.Cog):
                 )
                 return
 
+            # TODO: Add check for verifying role existence. Only allow roles that exist in the server.
+            # Throw errors if roles do not exist as error thrown from line 187 give off errors NoneType error.
+            # Overwrites somehow can still be created even if the role does not exist.
+
             # Define roles for ticket channels
             overwrites = {
                 # Deny everyone from seeing the ticket
