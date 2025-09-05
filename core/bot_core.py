@@ -20,8 +20,6 @@ class BotCore:
 
         if intents is None:
             self.intents = Intents.default()
-            intents.members = True
-            intents.message_content = True
         else:
             self.intents = intents
 
@@ -78,7 +76,7 @@ class BotCore:
             self.logger.info("Running bot...")
             self.bot.run(self.configs["token"])
         else:
-            print(f"[b red] No token provided.")
+            self.logger.error(f"No token provided.")
             return
 
     def getBot(self):
