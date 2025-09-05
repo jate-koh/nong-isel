@@ -43,7 +43,6 @@ class MessagesState(commands.Cog):
             ##########################################################################
 
             # Get the member's name for use in the ticket's channel. This is also the part where we enforce regex
-            regex_str = re.compile(r"^(\d+)_(\d+)_(.+)$")
             member = guild.get_member(message.author.id)
             if member is None:
                 self.logger.error(f"Member {message.author.id} not found in guild.")
@@ -51,17 +50,22 @@ class MessagesState(commands.Cog):
 
             self.logger.info(f"Their server alias is '{member.nick}'")
 
-            # Enforce regex on the nickname
+            # Check regex on member nickname on server
             try:
+                regex_str = re.compile(
+                    r"^((\d+)_)?(\d{10})_([A-Za-z]+)"
+                )  # 2: Group, 3: Student Id, 4: Name
                 matchgroups = regex_str.match(member.nick)
-                groupno, studentid, studentname = matchgroups.groups()
+                _, groupno, studentid, studentname = matchgroups.groups()
             except (
                 AttributeError,
                 TypeError,
-            ):  # .groups() called on a broken match group? user's fault.
+            ):
                 embed = discord.Embed(
                     title="Incorrect name format",
-                    description="Please set your nickname according to the format before proceeding: `GroupNo_StudentID_Name`",
+                    description="Please set your **SERVER NICKNAME** according "
+                    "to the format before proceeding: `GroupNo_StudentID_Name`; for example, `88_6xxxxxxx21_Jumpol`"
+                    "\n\nIf you do not have group, you may leave the group part blank; for example, `6xxxxxxx21_Jaturon`",
                     color=discord.Color.red(),
                 )
                 await message.reply(embed=embed)
@@ -69,12 +73,12 @@ class MessagesState(commands.Cog):
 
             # Check if author id is in records
             try:
-                with open("ticket_id.txt", "r") as f:
+                with open("ticket_id.txt", "r", encoding="utf-8") as f:
                     for line in f:
                         if not line:
                             continue
                         if int(line.split(":")[1]) == int(message.author.id):
-                            user_ticket = line.split(":")[0]
+                            user_ticket = str(line.split(":")[2].lower())
                             embed = discord.Embed(
                                 title="You already have an open ticket",
                                 color=discord.Color.red(),
@@ -90,7 +94,7 @@ class MessagesState(commands.Cog):
                             await message.reply(embed=embed)
                             return
             except FileNotFoundError:
-                self.logger.warning(f"File ticket_id.txt not found.")
+                self.logger.warn(f"File ticket_id.txt not found.")
             except Exception as error:
                 self.logger.error(f"Error reading ticket_id.txt - {error}")
                 return
@@ -150,7 +154,7 @@ class MessagesState(commands.Cog):
                         view_channel=True
                     )
                 else:
-                    self.logger.warning(f"Role {role} not found.")
+                    self.logger.warn(f"Role {role} not found.")
 
             # Create tickets texts in the Q&A categories
             try:
@@ -165,7 +169,10 @@ class MessagesState(commands.Cog):
                     )
                     return
 
-                channelname = f"{studentid}-{studentname}"
+                if groupno is None:
+                    channelname = f"{studentid}-{studentname}"
+                else:
+                    channelname = f"{groupno}-{studentid}-{studentname}"
 
                 ticket_text_channel = await categories.create_text_channel(
                     channelname,
@@ -229,8 +236,10 @@ class MessagesState(commands.Cog):
 
             # Append ticket ID to records
             try:
-                with open("ticket_id.txt", "a") as f:
-                    f.write(f"{ticket_id}:{message.author.id}\n")
+                with open("ticket_id.txt", "a", encoding="utf-8") as f:
+                    f.write(
+                        f"{ticket_id}:{message.author.id}:{channelname}:{ticket_text_channel.id}\n"
+                    )
                     f.close()
 
                 self.logger.info(
