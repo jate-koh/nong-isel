@@ -52,6 +52,7 @@ configs = {
     "qna_channel": qna_channel,
     "qna_category": qna_category,
     "emojis": emojis,
+    "gmt": 7,
 }
 
 test_flags = {

@@ -17,12 +17,16 @@ def_configs = {
     "token": token,
     "guild_id": guild_id,
     "admin_role": "Admin",
+    "staff_role": [],
     "guest_role": "Guest",
     "role_prefix": "G",
     "group_prefix": "G-",
-    "min_roles": 5,
-    "max_roles": 60,
+    "min_roles": 3,
+    "max_roles": 63,
     "prefix": "!",
+    "qna_channel": None,
+    "qna_category": None,
+    "emojis": {},
     "gmt": 7,
 }
 

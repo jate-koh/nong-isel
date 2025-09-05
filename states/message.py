@@ -8,8 +8,12 @@ sf = SonyFlake()
 
 
 class MessagesState(commands.Cog):
-    def __init__(self, bot, configs=None, flags=None):
+    def __init__(self, bot, logger, configs=None, flags=None):
+        if bot is None or logger is None:
+            raise ValueError("bot and logger are required")
+
         self.bot = bot
+        self.logger = logger
         if configs is not None:
             self.configs = configs
         if flags is not None:
@@ -24,7 +28,7 @@ class MessagesState(commands.Cog):
 
         # Check if message is private
         if message.channel.type == discord.ChannelType.private:
-            print(f"[b yellow] Direct message received from {message.author}")
+            self.logger.info(f"Direct message received from '{message.author}'")
             guild = self.bot.get_guild(int(self.configs["guild_id"]))
 
             ############################## TESTING MODE ##############################
@@ -39,28 +43,42 @@ class MessagesState(commands.Cog):
             ##########################################################################
 
             # Get the member's name for use in the ticket's channel. This is also the part where we enforce regex
-            regex_str = re.compile(r"^(\d+)_(\d+)_(.+)$")
             member = guild.get_member(message.author.id)
+            if member is None:
+                self.logger.error(f"Member {message.author.id} not found in guild.")
+                return
+
+            self.logger.info(f"Their server alias is '{member.nick}'")
+
+            # Check regex on member nickname on server
             try:
+                regex_str = re.compile(
+                    r"^((\d+)_)?(\d{10})_([A-Za-z]+)"
+                )  # 2: Group, 3: Student Id, 4: Name
                 matchgroups = regex_str.match(member.nick)
-                groupno, studentid, studentname = matchgroups.groups()
-            except (AttributeError, TypeError): # .groups() called on a broken match group? user's fault.
+                _, groupno, studentid, studentname = matchgroups.groups()
+            except (
+                AttributeError,
+                TypeError,
+            ):
                 embed = discord.Embed(
                     title="Incorrect name format",
-                    description="Please set your nickname according to the format before proceeding: `GroupNo_StudentID_Name`",
+                    description="Please set your **SERVER NICKNAME** according "
+                    "to the format before proceeding: `GroupNo_StudentID_Name`; for example, `88_6xxxxxxx21_Jumpol`"
+                    "\n\nIf you do not have group, you may leave the group part blank; for example, `6xxxxxxx21_Jaturon`",
                     color=discord.Color.red(),
                 )
                 await message.reply(embed=embed)
                 return
-            
+
             # Check if author id is in records
             try:
-                with open("ticket_id.txt", "r") as f:
+                with open("ticket_id.txt", "r", encoding="utf-8") as f:
                     for line in f:
                         if not line:
                             continue
                         if int(line.split(":")[1]) == int(message.author.id):
-                            user_ticket = line.split(":")[0]
+                            user_ticket = str(line.split(":")[2].lower())
                             embed = discord.Embed(
                                 title="You already have an open ticket",
                                 color=discord.Color.red(),
@@ -76,15 +94,14 @@ class MessagesState(commands.Cog):
                             await message.reply(embed=embed)
                             return
             except FileNotFoundError:
-                print(f"[b yellow] File ticket_id.txt not found.")
+                self.logger.warn(f"File ticket_id.txt not found.")
             except Exception as error:
-                print(f"[b red] Error reading ticket_id.txt - {error}")
+                self.logger.error(f"Error reading ticket_id.txt - {error}")
                 return
 
             # Create ticket ID
             ticket_id = sf.next_id()
-            print(f"[b yellow] Generated ticket ID: {ticket_id}")
-
+            self.logger.info(f"Generated new ticket ID: {ticket_id}")
 
             # Make a relay message to Q&A channel
             try:
@@ -92,8 +109,8 @@ class MessagesState(commands.Cog):
                     int(self.configs["qna_channel"])
                 )
                 if main_qna_channel is None:
-                    print(
-                        f"[b red] Channel ID {self.configs['qna_channel']} not found."
+                    self.logger.error(
+                        f"Channel ID {self.configs['qna_channel']} not found."
                     )
                     return
 
@@ -112,8 +129,8 @@ class MessagesState(commands.Cog):
                     inline=False,
                 )
             except Exception as error:
-                print(
-                    f"[b red] Error creating message for {self.configs['qna_channel']} - {error}"
+                self.logger.error(
+                    f"Error creating message for {self.configs['qna_channel']} - {error}"
                 )
                 return
 
@@ -128,7 +145,7 @@ class MessagesState(commands.Cog):
                     guild.roles, name=self.configs["admin_role"]
                 ): discord.PermissionOverwrite(view_channel=True),
             }
-    
+
             # Add staff roles to the overwrites roles map
             for role in self.configs["staff_role"]:
                 staff_role = discord.utils.get(guild.roles, name=role)
@@ -137,7 +154,7 @@ class MessagesState(commands.Cog):
                         view_channel=True
                     )
                 else:
-                    print(f"[b red] Role {role} not found.")
+                    self.logger.warn(f"Role {role} not found.")
 
             # Create tickets texts in the Q&A categories
             try:
@@ -147,20 +164,25 @@ class MessagesState(commands.Cog):
                 )
 
                 if categories is None:
-                    print(
-                        f"[b red] Category ID {self.configs['qna_category']} not found."
+                    self.logger.error(
+                        f"Category ID {self.configs['qna_category']} not found."
                     )
                     return
 
-                channelname = f"{studentid}-{studentname}"
+                if groupno is None:
+                    channelname = f"{studentid}-{studentname}"
+                else:
+                    channelname = f"{groupno}-{studentid}-{studentname}"
 
                 ticket_text_channel = await categories.create_text_channel(
                     channelname,
                     overwrites=overwrites,
                 )
+
+                await ticket_text_channel.move(beginning=True, category=categories)
             except Exception as error:
-                print(
-                    f"[b red] Error creating ticket text channel in {self.configs['qna_category']} - {error}"
+                self.logger.error(
+                    f"Error creating ticket text channel in {self.configs['qna_category']} - {error}"
                 )
                 return
 
@@ -168,8 +190,8 @@ class MessagesState(commands.Cog):
             try:
                 await ticket_text_channel.send(embed=embed)
             except Exception as error:
-                print(
-                    f"[b red] Error sending message to {ticket_text_channel.name} - {error}"
+                self.logger.error(
+                    f"Error sending message to {ticket_text_channel.name} - {error}"
                 )
                 return
 
@@ -183,8 +205,8 @@ class MessagesState(commands.Cog):
             try:
                 await main_qna_channel.send(embed=embed)
             except Exception as error:
-                print(
-                    f"[b red] Error sending message to {main_qna_channel.name} - {error}"
+                self.logger.error(
+                    f"Error sending message to {main_qna_channel.name} - {error}"
                 )
                 return
 
@@ -207,19 +229,24 @@ class MessagesState(commands.Cog):
                 )
                 await message.reply(embed=embed)
             except Exception as error:
-                print(f"[b red] Error sending DM to {message.author.name} - {error}")
+                self.logger.error(
+                    f"Error sending DM to {message.author.name} - {error}"
+                )
                 return
 
             # Append ticket ID to records
             try:
-                with open("ticket_id.txt", "a") as f:
-                    f.write(f"{ticket_id}:{message.author.id}\n")
+                with open("ticket_id.txt", "a", encoding="utf-8") as f:
+                    f.write(
+                        f"{ticket_id}:{message.author.id}:{channelname}:{ticket_text_channel.id}\n"
+                    )
                     f.close()
 
-                print(
-                    f"[b green] Ticket ID {ticket_id} from {message.author.id} ({message.author.name}) appended to ticket_id.txt"
+                self.logger.info(
+                    f"Ticket ID {ticket_id} from {message.author.id} ({message.author.name}) appended to ticket_id.txt"
                 )
             except Exception as error:
-                print(f"[b red] Error appending ticket ID to ticket_id.txt - {error}")
+                self.logger.error(
+                    f"Error appending ticket ID to ticket_id.txt - {error}"
+                )
                 return
-

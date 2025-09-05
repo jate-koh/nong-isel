@@ -48,7 +48,7 @@ async def setup(bot, db, configs=None, flags=None):
         await bot.add_cog(
             MessagesState(
                 bot=bot,
-                # logger=logger,
+                logger=logger,
                 configs=configs,
                 flags=flags,
             )

@@ -6,6 +6,9 @@ message_id.txt
 **/*script*
 **/*.cfg
 
+# Env
+**/*.env
+
 # Database
 **/*.sqlite*
 
