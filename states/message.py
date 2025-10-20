@@ -119,10 +119,18 @@ class MessagesState(commands.Cog):
                     description=message.content,
                     color=discord.Color.blue(),
                 )
-                embed.set_author(
-                    name=message.author.name,
-                    icon_url=message.author.avatar.url,
-                )
+
+                # If no avatar is found
+                if message.author.avatar is None:
+                    embed.set_author(
+                        name=message.author.name,
+                    )
+                else:
+                    embed.set_author(
+                        name=message.author.name,
+                        icon_url=message.author.avatar.url,
+                    )
+
                 embed.add_field(
                     name="Ticket ID",
                     value=ticket_id,
